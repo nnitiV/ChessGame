@@ -1,0 +1,32 @@
+:root {
+  --green-1: #477D46;
+  --green-2: #335C32;
+  --green-3: #2B522B;
+  --brown-1: #564B34;
+  --brown-2: #413723;
+  --brown-3: #261F11;
+  --black-1: #545954;
+  --black-2: #2F332F;
+  --black-3: #111211;
+  --white-1: #EBF3EB;
+  --white-2: #DBE2DB;
+  --white-3: #C7CDC7;
+  --yellow-1: #EFCC76;
+  --yellow-2: #E3B767;
+  --yellow-3: #DEAF5B;
+  --beige-1: #D3B588;
+  --beige-2: #CAAE83;
+  --beige-3: #B79D77;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Irish Grover", system-ui;
+  user-select: none;
+}
+
+body {
+  background: var(--white-3);
+}

@@ -1,0 +1,91 @@
+.game {
+    width: calc(20vw + 15rem);
+    background-color: var(--white-1);
+    border: .5rem solid var(--brown-3);
+    border-radius: .5rem;
+    margin: 2rem auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.game .board {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    overflow: hidden;
+}
+
+.game .board div {
+    width: auto;
+    height: 4.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 4px solid transparent;
+}
+
+.game .board div.active {
+    box-shadow: inset 0 0 1rem var(--black-3);
+    border-width: 2px;
+    border-color: var(--beige-1);
+}
+
+.game .board div.yellow {
+    background: var(--yellow-3);
+}
+
+.game .board div.yellow:hover,
+.game .board div.yellow.active {
+    background: var(--yellow-1);
+    cursor: pointer;
+}
+
+.game .board div.green {
+    background: var(--green-3);
+}
+
+.game .board div.green:hover,
+.game .board div.green.active {
+    background: var(--green-1);
+    cursor: pointer;
+}
+
+.game .board div img {
+    width: 3rem;
+    height: 3rem;
+    transition: .125s all;
+    user-select: none;
+}
+
+.game .board div.yellow.active img,
+.game .board div.green.active img {
+    width: 4rem;
+    height: 4rem;
+    animation: initAnim .45s forwards 0s, tiltPiece 1.25s infinite .45s;
+}
+
+
+@keyframes initAnim {
+
+    0%,
+    25% {
+        transform: rotateZ(0);
+    }
+
+    100% {
+        transform: rotateZ(25deg);
+    }
+}
+
+@keyframes tiltPiece {
+
+    0%,
+    100% {
+        transform: rotateZ(25deg);
+    }
+
+    50% {
+        transform: rotateZ(-25deg);
+    }
+}
