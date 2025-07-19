@@ -17,31 +17,40 @@ const Board = () => {
     // const [isWhiteTurn, setIsWhiteTurn] = useState<boolean>(true);
 
     const clickField = (row: number, column: number, piece: string) => {
-        if (piece) {
+        if (selectedPiece && checkIfMovementIsValid(row, column, board[selectedPiece![0]][selectedPiece![1]])) {
+            movePiece(row, column);
+            return unselectPiece()
+        } else if (piece) {
             if (selectedPiece && row === selectedPiece[0] && column === selectedPiece[1]) {
-                setPieceIsSelected(false);
-                return setSelectedPiece(null)
+                return unselectPiece()
             }
             setPieceIsSelected(true);
             return setSelectedPiece([row, column]);
-        } else if (!piece && selectedPiece) {
-            if (checkIfMovementIsValid(row, column, board[selectedPiece![0]][selectedPiece![1]])) {
-                movePiece(row, column);
-                setSelectedPiece(null);
-                return setPieceIsSelected(false);
-            }
+        } else {
+            return unselectPiece()
         }
+    }
+
+    const unselectPiece = () => {
+        setPieceIsSelected(false);
+        return setSelectedPiece(null)
     }
 
     const checkIfMovementIsValid = (row: number, column: number, piece: string) => {
         switch (piece) {
             case 'wp':
-                if (!board[selectedPiece![0] - 1][selectedPiece![1]] && column == selectedPiece![1] && (row === (selectedPiece![0] - 1) || row === (selectedPiece![0] - 2))) {
+                if (column == selectedPiece![1] && (row === (selectedPiece![0] - 1) || row === (selectedPiece![0] - 2))) {
+                    if (board[row + 1][column].slice(0, -1) === 'b') {
+                        return false;
+                    }
                     return true
                 }
                 break;
             case 'bp':
-                if (!board[selectedPiece![0] + 1][selectedPiece![1]] && column == selectedPiece![1] && (row === (selectedPiece![0] + 1) || row === (selectedPiece![0] + 2))) {
+                if (column == selectedPiece![1] && (row === (selectedPiece![0] + 1) || row === (selectedPiece![0] + 2))) {
+                    if (board[row - 1][column].slice(0, -1) === 'w') {
+                        return false;
+                    }
                     return true
                 }
                 break;
