@@ -5,8 +5,10 @@
   --brown-1: #564B34;
   --brown-2: #413723;
   --brown-3: #261F11;
+  --black-50-1: #54595480;
   --black-1: #545954;
   --black-2: #2F332F;
+  --black-50-3: #11121179;
   --black-3: #111211;
   --white-1: #EBF3EB;
   --white-2: #DBE2DB;
@@ -29,4 +31,5 @@
 
 body {
   background: var(--white-3);
+  overflow-x: hidden;
 }
