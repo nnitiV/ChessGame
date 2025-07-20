@@ -319,7 +319,7 @@ const Board = () => {
         return false;
     }
 
-    // Show possible player's position.
+    // Show possible moviments.
     useEffect(() => {
         const tempBoard = [...board];
         deletePossibleMovimentsMarks(tempBoard);
@@ -775,10 +775,10 @@ const Board = () => {
                 case 'bp':
                     console.log(`Piece ${tempBoard[selectedPiece[0]][selectedPiece[1] - 1]} at position: [${selectedPiece[0]}, ${selectedPiece[1]}]`);
                     for (let x = 1; x <= 2; x++) {
-                        // if (selectedPiece[1] < 7 && tempBoard[selectedPiece[0] + x][selectedPiece[1] + 1].slice(0, 1) === 'w') {
-                        //     tempBoard[selectedPiece[0] + x][selectedPiece[1] + 1] = tempBoard[selectedPiece[0] + x][selectedPiece[1] + 1].slice(0, 2) + "et";
-                        //     setBoard(tempBoard);
-                        // }
+                        if (selectedPiece[1] < 7 && tempBoard[selectedPiece[0] + x][selectedPiece[1] + 1].slice(0, 1) === 'w') {
+                            tempBoard[selectedPiece[0] + x][selectedPiece[1] + 1] = tempBoard[selectedPiece[0] + x][selectedPiece[1] + 1].slice(0, 2) + "et";
+                            setBoard(tempBoard);
+                        }
                         if (selectedPiece[1] > 0 && tempBoard[selectedPiece[0] + x][selectedPiece[1] - 1].slice(0, 1) === 'w') {
                             tempBoard[selectedPiece[0] + x][selectedPiece[1] - 1] = tempBoard[selectedPiece[0] + x][selectedPiece[1] - 1].slice(0, 2) + "et";
                             setBoard(tempBoard);
