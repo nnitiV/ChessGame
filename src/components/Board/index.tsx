@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import styles from "./index.module.css"
 import Message from "./message";
+import Promote from "./Promote";
 
 const Board = () => {
     const intialBoardState = [
@@ -17,10 +18,14 @@ const Board = () => {
     const [totalMoves, setTotalMoves] = useState<number>(0);
     const [selectedPiece, setSelectedPiece] = useState<number[] | null>(null);
     const [gameIsFinished, setGameIsFinished] = useState<boolean>(false);
-    const [pieceIsSelected, setPieceIsSelected] = useState<boolean>(false);
+    const [_, setPieceIsSelected] = useState<boolean>(false);
     const [isWhiteTurn, setIsWhiteTurn] = useState<boolean>(true);
     const [showMessage, setShowMessage] = useState<boolean>(false);
     const [message, setMessage] = useState<string>("");
+    const [openPromotionSelection, setOpenPromotionSelection] = useState<boolean>(false);
+    const [pieceToSubstituteWith, setPieceToSubstituteWith] = useState<string>("");
+    const [lastMove, setLastMove] = useState<number[]>([]);
+    const [renderScreen, setRenderScreen] = useState<string>("");
 
     const clickField = (row: number, column: number, piece: string) => {
         if (checkPlayerTurn(piece)) return;
@@ -192,7 +197,11 @@ const Board = () => {
     };
 
     const checkSquare = (piece: string, squarePosition: string) => {
-        return squarePosition.slice(0, -1) !== piece.slice(0, -1) || !squarePosition;
+        const didItCapturePiece = squarePosition && squarePosition.slice(0, -1) !== piece.slice(0, -1);
+        if (didItCapturePiece) {
+            new Audio('./capture.mp3').play();
+        }
+        return didItCapturePiece || !squarePosition;
     };
 
     const checkRow = (row: number) => {
@@ -280,30 +289,18 @@ const Board = () => {
     };
 
     const movePiece = (row: number, column: number) => {
-        board.map((boardRow, index) => {
-            boardRow.map((_, columnIndex) => {
-                if (index === row && columnIndex === column) {
-                    // Move piece to 
-                    setBoard(board =>
-                        board.map((boardRow, rowIndex) =>
-                            rowIndex === row
-                                ? boardRow.map((boardColumn, columnIndex) => (columnIndex === column ? board[selectedPiece![0]][selectedPiece![1]] : boardColumn))
-                                : boardRow
-                        )
-                    );
-                    // Remove piece from
-                    setBoard(board =>
-                        board.map((boardRow, rowIndex) =>
-                            rowIndex === selectedPiece![0]
-                                ? boardRow.map((boardColumn, columnIndex) => (columnIndex === selectedPiece![1] ? "" : boardColumn))
-                                : boardRow
-                        )
-                    );
-                }
-            })
-        });
+        const pieceMoving = board[selectedPiece![0]][selectedPiece![1]];
+        const tempBoard = board;
+        tempBoard[row][column] = pieceMoving;
+        tempBoard[selectedPiece![0]][selectedPiece![1]] = '';
+        if ((row === 0 || row === 7) && board[selectedPiece![0]][selectedPiece![1]].slice(1, 2) === 'p') {
+            setOpenPromotionSelection(true);
+        }
+        setBoard(tempBoard)
         setIsWhiteTurn(prev => !prev);
         setTotalMoves(totalMove => totalMove + 1);
+        new Audio('./move-self.mp3').play();
+        setLastMove([row, column]);
     };
 
     const checkHorseMove = (row: number, column: number, piece: string, squarePosition: string) => {
@@ -1265,8 +1262,23 @@ const Board = () => {
         }
     }, [totalMoves])
 
+    const udpateBord = () => {
+        const tempBoard = board;
+        if (lastMove.length > 0) {
+            const lastPieceMoved = board[lastMove[0]][lastMove[1]];
+            tempBoard[lastMove[0]][lastMove[1]] = lastPieceMoved.slice(0, 1) + pieceToSubstituteWith;
+        }
+        setBoard(tempBoard);
+        setLastMove([]);
+        setRenderScreen(prev => prev);
+    }
+    useEffect(() => {
+        udpateBord();
+    }, [pieceToSubstituteWith]);
+
     return (
         <>
+            {renderScreen && ""}
             <section className={`${styles.game} ${gameIsFinished && styles.gameFinished}`}>
                 <div className={styles.board}>
                     {board.map((row, rowIndex) => (
@@ -1280,13 +1292,14 @@ const Board = () => {
                                 key={rowIndex + columnIndex}
                                 onClick={() => clickField(rowIndex, columnIndex, piece)}
                             >
-                                {piece && piece !== "pm" && <img src={`${piece.slice(0, 2)}.svg`} alt="" draggable={false} className={`${piece.includes('et') && styles.eatable} `} />}
+                                {piece && piece !== "pm" && <img src={`${piece.slice(0, 2)}.svg`} alt="" draggable={false} className={`${piece.includes('et') ? styles.eatable : ""} `} />}
                             </div>
                         ))
                     ))}
                 </div>
             </section>
             <Message message={message} showMessage={showMessage} setShowMessage={setShowMessage} />
+            <Promote openPromotionSelection={openPromotionSelection} setOpenPromotionSelection={setOpenPromotionSelection} setPieceToSubstituteWith={setPieceToSubstituteWith} />
         </>
     )
 };
