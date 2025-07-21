@@ -19,7 +19,7 @@ const Board = () => {
     const [selectedPiece, setSelectedPiece] = useState<number[] | null>(null);
     const [gameIsFinished, setGameIsFinished] = useState<boolean>(false);
     const [_, setPieceIsSelected] = useState<boolean>(false);
-    const [isWhiteTurn, setIsWhiteTurn] = useState<boolean>(false);
+    const [isWhiteTurn, setIsWhiteTurn] = useState<boolean>(true);
     const [showMessage, setShowMessage] = useState<boolean>(false);
     const [message, setMessage] = useState<string>("");
     const [openPromotionSelection, setOpenPromotionSelection] = useState<boolean>(false);
@@ -180,13 +180,19 @@ const Board = () => {
                         const castleWhite = checkCastleWhite;
                         castleWhite[0] = true;
                         castleWhite[2] = true;
+                        console.log("It was a white castle!")
                         setCheckCastleWhite(castleWhite);
                         return true;
-                    } else if (row === 7 && column === 2 && checkCastleWhite[1] === false) {
+                    }
+                }
+
+                if (checkCastleWhite[0] === false && !board[selectedPiece![0]][selectedPiece![1] - 1] && !board[selectedPiece![0]][selectedPiece![1] - 2] && !board[selectedPiece![0]][selectedPiece![1] - 3]) {
+                    if (row === 7 && column === 2 && checkCastleWhite[1] === false) {
                         tempBoard[row][column + 1] = 'wr';
                         tempBoard[row][column - 2] = '';
                         new Audio("./castle.mp3").play();
                         const castleWhite = checkCastleWhite;
+                        console.log("It was a white castle!")
                         castleWhite[0] = true;
                         castleWhite[1] = true;
                         setCheckCastleWhite(castleWhite);
@@ -208,6 +214,32 @@ const Board = () => {
 
                 break;
             case "bk":
+                if (checkCastleBlack[0] === false && !board[selectedPiece![0]][selectedPiece![1] + 1] && !board[selectedPiece![0]][selectedPiece![1] + 2]) {
+                    if (row === 0 && column === 6 && checkCastleBlack[2] === false) {
+                        tempBoard[row][column - 1] = 'br';
+                        tempBoard[row][column + 1] = '';
+                        new Audio("./castle.mp3").play();
+                        const castleBlack = checkCastleBlack;
+                        castleBlack[0] = true;
+                        castleBlack[2] = true;
+                        console.log("It was a black castle!")
+                        setCheckCastleBlack(castleBlack);
+                        return true;
+                    }
+                }
+                if (checkCastleBlack[0] === false && !board[selectedPiece![0]][selectedPiece![1] - 1] && !board[selectedPiece![0]][selectedPiece![1] - 2] && !board[selectedPiece![0]][selectedPiece![1] - 2]) {
+                    if (row === 0 && column === 2 && checkCastleBlack[1] === false) {
+                        tempBoard[row][column + 1] = 'br';
+                        tempBoard[row][column - 2] = '';
+                        new Audio("./castle.mp3").play();
+                        const castleBlack = checkCastleBlack;
+                        castleBlack[0] = true;
+                        castleBlack[1] = true;
+                        console.log("It was a black castle!")
+                        setCheckCastleBlack(castleBlack);
+                        return true;
+                    }
+                }
                 if (rowDifference === 1 || columnDifference === 1) {
                     if (checkIfMovimentIsDiagonal(row, column)) {
                         return checkSquare(piece, squarePosition);
@@ -319,6 +351,16 @@ const Board = () => {
 
     const movePiece = (row: number, column: number) => {
         const pieceMoving = board[selectedPiece![0]][selectedPiece![1]];
+        if (selectedPiece![0] === 7 && selectedPiece![1] === 4 && pieceMoving === 'wk') {
+            let whiteCastleCheck = checkCastleWhite;
+            whiteCastleCheck[0] = true;
+            setCheckCastleWhite(whiteCastleCheck);
+        }
+        if (selectedPiece![0] === 0 && selectedPiece![1] === 4 && pieceMoving === 'bk') {
+            let blackCastleCheck = checkCastleBlack;
+            blackCastleCheck[0] = true;
+            setCheckCastleBlack(blackCastleCheck);
+        }
         const tempBoard = board;
         tempBoard[row][column] = pieceMoving;
         tempBoard[selectedPiece![0]][selectedPiece![1]] = '';
@@ -1185,84 +1227,85 @@ const Board = () => {
                     break;
                 case 'bk':
                     x = selectedPiece[0], y = selectedPiece[1];
-                    if (tempBoard[x][y].slice(0, 2) === 'bk' && checkCastleWhite[0] === false && checkCastleWhite[2] === false &&
+                    if (checkCastleBlack[0] === false && checkCastleBlack[2] === false &&
                         !tempBoard[selectedPiece![0]][selectedPiece![1] + 1] && !tempBoard[selectedPiece![0]][selectedPiece![1] + 2]) {
                         tempBoard[x][y + 2] = 'pm';
                         setBoard(tempBoard);
                     }
-                    if (tempBoard[x][y].slice(0, 2) === 'bk' && checkCastleWhite[0] === false && checkCastleWhite[1] === false &&
+                    if (checkCastleBlack[0] === false && checkCastleBlack[1] === false &&
                         !tempBoard[selectedPiece![0]][selectedPiece![1] - 1] && !tempBoard[selectedPiece![0]][selectedPiece![1] - 2] && !tempBoard[selectedPiece![0]][selectedPiece![1] - 3]) {
                         tempBoard[x][y - 2] = 'pm';
                         setBoard(tempBoard);
                     }
 
-                    if (x > 0) {
-                        if (!board[x - 1][y]) {
-                            tempBoard[x - 1][y] = 'pm';
+                    if (y > 0) {
+                        if (!tempBoard[x][y - 1]) {
+                            tempBoard[x][y - 1] = 'pm';
                             setBoard(tempBoard);
-                        } else if (board[x - 1][y].slice(0, 1) === 'w') {
-                            tempBoard[x - 1][y] = tempBoard[x - 1][y].slice(0, 3) + 'et';
+                        } else if (tempBoard[x][y - 1].slice(0, 1) === 'w') {
+                            tempBoard[x][y - 1] = tempBoard[x][y - 1].slice(0, 2) + 'et';
                             setBoard(tempBoard);
                         }
-
-                        if (y < 7) {
-                            if (!board[x - 1][y + 1]) {
-                                tempBoard[x - 1][y + 1] = 'pm';
-                                setBoard(tempBoard);
-                            } else if (board[x - 1][y + 1].slice(0, 1) === 'w') {
-                                tempBoard[x - 1][y + 1] = tempBoard[x - 1][y + 1].slice(0, 3) + 'et';
-                                setBoard(tempBoard);
-                            }
-
-                            if (!board[x][y + 1]) {
-                                tempBoard[x][y + 1] = 'pm';
-                                setBoard(tempBoard);
-                            } else if (board[x][y + 1].slice(0, 1) === 'w') {
-                                tempBoard[x][y + 1] = tempBoard[x][y + 1].slice(0, 3) + 'et';
-                                setBoard(tempBoard);
-                            }
+                    }
+                    if (y < 7) {
+                        if (!tempBoard[x][y + 1]) {
+                            tempBoard[x][y + 1] = 'pm';
+                            setBoard(tempBoard);
+                        } else if (tempBoard[x][y + 1].slice(0, 1) === 'w') {
+                            tempBoard[x][y + 1] = tempBoard[x][y + 1].slice(0, 2) + 'et';
+                            setBoard(tempBoard);
                         }
+                    }
 
+                    if (x < 7) {
                         if (y > 0) {
-                            if (!board[x - 1][y - 1]) {
-                                tempBoard[x - 1][y - 1] = 'pm';
+                            if (!tempBoard[x + 1][y]) {
+                                tempBoard[x + 1][y] = 'pm';
                                 setBoard(tempBoard);
-                            } else if (board[x - 1][y - 1].slice(0, 1) === 'w') {
-                                tempBoard[x - 1][y - 1] = tempBoard[x - 1][y - 1].slice(0, 3) + 'et';
+                            } else if (tempBoard[x + 1][y].slice(0, 1) === 'w') {
+                                tempBoard[x + 1][y] = tempBoard[x + 1][y].slice(0, 2) + 'et';
                                 setBoard(tempBoard);
                             }
-                            if (!board[x][y - 1]) {
-                                tempBoard[x][y - 1] = 'pm';
+                            if (!tempBoard[x + 1][y - 1]) {
+                                tempBoard[x + 1][y - 1] = 'pm';
                                 setBoard(tempBoard);
-                            } else if (board[x][y - 1].slice(0, 1) === 'w') {
-                                tempBoard[x][y - 1] = tempBoard[x][y - 1].slice(0, 3) + 'et';
+                            } else if (tempBoard[x + 1][y - 1].slice(0, 1) === 'w') {
+                                tempBoard[x + 1][y - 1] = tempBoard[x + 1][y - 1].slice(0, 2) + 'et';
+                                setBoard(tempBoard);
+                            }
+                            if (!tempBoard[x + 1][y + 1]) {
+                                tempBoard[x + 1][y + 1] = 'pm';
+                                setBoard(tempBoard);
+                            } else if (tempBoard[x + 1][y + 1].slice(0, 1) === 'w') {
+                                tempBoard[x + 1][y + 1] = tempBoard[x + 1][y + 1].slice(0, 2) + 'et';
                                 setBoard(tempBoard);
                             }
                         }
                     }
-                    if (x < 7) {
-                        if (!board[x + 1][y]) {
-                            tempBoard[x + 1][y] = 'pm';
-                            setBoard(tempBoard);
-                        } else if (board[x + 1][y].slice(0, 1) === 'w') {
-                            tempBoard[x + 1][y] = tempBoard[x + 1][y].slice(0, 3) + 'et';
-                            setBoard(tempBoard);
-                        }
-                        if (y > 0) {
-                            if (!board[x + 1][y - 1]) {
-                                tempBoard[x + 1][y - 1] = 'pm';
+                    if (x > 0) {
+                        if (y < 7) {
+
+                            if (!tempBoard[x - 1][y]) {
+                                tempBoard[x - 1][y] = 'pm';
                                 setBoard(tempBoard);
-                            } else if (board[x + 1][y - 1].slice(0, 1) === 'w') {
-                                tempBoard[x + 1][y - 1] = tempBoard[x + 1][y - 1].slice(0, 3) + 'et';
+                            } else if (tempBoard[x - 1][y].slice(0, 1) === 'w') {
+                                tempBoard[x - 1][y] = tempBoard[x - 1][y].slice(0, 2) + 'et';
                                 setBoard(tempBoard);
                             }
-                        }
-                        if (y < 7) {
-                            if (!board[x + 1][y + 1]) {
-                                tempBoard[x + 1][y + 1] = 'pm';
+
+                            if (!tempBoard[x - 1][y - 1]) {
+                                tempBoard[x - 1][y - 1] = 'pm';
                                 setBoard(tempBoard);
-                            } else if (board[x + 1][y + 1].slice(0, 1) === 'w') {
-                                tempBoard[x + 1][y + 1] = tempBoard[x + 1][y + 1].slice(0, 3) + 'et';
+                            } else if (tempBoard[x - 1][y - 1].slice(0, 1) === 'w') {
+                                tempBoard[x - 1][y - 1] = tempBoard[x - 1][y - 1].slice(0, 2) + 'et';
+                                setBoard(tempBoard);
+                            }
+
+                            if (!tempBoard[x - 1][y + 1]) {
+                                tempBoard[x - 1][y + 1] = 'pm';
+                                setBoard(tempBoard);
+                            } else if (tempBoard[x - 1][y + 1].slice(0, 1) === 'w') {
+                                tempBoard[x - 1][y + 1] = tempBoard[x - 1][y + 1].slice(0, 2) + 'et';
                                 setBoard(tempBoard);
                             }
                         }
