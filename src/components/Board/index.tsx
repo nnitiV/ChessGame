@@ -14,11 +14,13 @@ const Board = () => {
         ["wr", "wn", "wb", "wq", "wk", "wb", "wn", "wr"]
     ];
     const [board, setBoard] = useState<string[][]>(intialBoardState);
+    const [totalMoves, setTotalMoves] = useState<number>(0);
     const [selectedPiece, setSelectedPiece] = useState<number[] | null>(null);
+    const [gameIsFinished, setGameIsFinished] = useState<boolean>(false);
     const [pieceIsSelected, setPieceIsSelected] = useState<boolean>(false);
     const [isWhiteTurn, setIsWhiteTurn] = useState<boolean>(true);
     const [showMessage, setShowMessage] = useState<boolean>(false);
-    const [turnMessage, setTurnMessage] = useState<string>("");
+    const [message, setMessage] = useState<string>("");
 
     const clickField = (row: number, column: number, piece: string) => {
         if (checkPlayerTurn(piece)) return;
@@ -31,14 +33,12 @@ const Board = () => {
             if (selectedPiece && row === selectedPiece[0] && column === selectedPiece[1]) {
                 return unselectPiece()
             }
-            if (piece !== 'pm' && selectedPiece && piece.slice(0, -1) !== board[selectedPiece![0]][selectedPiece![1]].slice(0, -1)) {
-                console.log("Here")
-                setShowMessage(true);
-                return setTurnMessage(isWhiteTurn ? "It's white turn." : "It's black turn.");
+            if (piece !== 'pm' && selectedPiece && piece.slice(0, 1) !== board[selectedPiece![0]][selectedPiece![1]].slice(0, 1)) {
+                return;
             }
-            if (selectedPiece && piece.slice(0, -1) === board[selectedPiece![0]][selectedPiece![1]].slice(0, -1)) {
+            if (selectedPiece && piece.slice(0, 1) === board[selectedPiece![0]][selectedPiece![1]].slice(0, 1)) {
                 const tempBoard = [...board];
-                deletePossibleMovimentsMarks(tempBoard);
+                deleteAnyMovimentMark(tempBoard);
             }
             if (piece !== 'pm') {
                 setPieceIsSelected(true);
@@ -54,11 +54,11 @@ const Board = () => {
         if (!selectedPiece) {
             if (piece.slice(0, -1) === "b" && isWhiteTurn) {
                 setShowMessage(true);
-                setTurnMessage("It's white turn!");
+                setMessage("It's white turn!");
                 return true;
             } else if (piece.slice(0, -1) === "w" && !isWhiteTurn) {
                 setShowMessage(true);
-                setTurnMessage("It's black turn!");
+                setMessage("It's black turn!");
                 return true;
             }
         }
@@ -67,7 +67,7 @@ const Board = () => {
 
     const unselectPiece = () => {
         const tempBoard = [...board];
-        deletePossibleMovimentsMarks(tempBoard);
+        deleteAnyMovimentMark(tempBoard);
         setPieceIsSelected(false);
         return setSelectedPiece(null)
     };
@@ -303,6 +303,7 @@ const Board = () => {
             })
         });
         setIsWhiteTurn(prev => !prev);
+        setTotalMoves(totalMove => totalMove + 1);
     };
 
     const checkHorseMove = (row: number, column: number, piece: string, squarePosition: string) => {
@@ -322,7 +323,7 @@ const Board = () => {
     // Show possible moviments.
     useEffect(() => {
         const tempBoard = [...board];
-        deletePossibleMovimentsMarks(tempBoard);
+        deleteAnyMovimentMark(tempBoard);
         let x = -1, y = -1;
         if (selectedPiece) {
             const piece = board[selectedPiece[0]][selectedPiece[1]];
@@ -330,13 +331,16 @@ const Board = () => {
                 case 'wp':
                     console.log(`Piece ${tempBoard[selectedPiece[0]][selectedPiece[1] - 1]} at position: [${selectedPiece[0]}, ${selectedPiece[1]}]`);
                     for (let x = 1; x <= 2; x++) {
-                        if (selectedPiece[1] < 7 && tempBoard[selectedPiece[0] - x][selectedPiece[1] + 1].slice(0, 1) === 'b') {
-                            tempBoard[selectedPiece[0] - x][selectedPiece[1] + 1] = tempBoard[selectedPiece[0] - x][selectedPiece[1] + 1].slice(0, 2) + "et";
-                            setBoard(tempBoard);
-                        }
-                        if (selectedPiece[1] > 0 && tempBoard[selectedPiece[0] - x][selectedPiece[1] - 1].slice(0, 1) === 'b') {
-                            tempBoard[selectedPiece[0] - x][selectedPiece[1] - 1] = tempBoard[selectedPiece[0] - x][selectedPiece[1] - 1].slice(0, 2) + "et";
-                            setBoard(tempBoard);
+                        if (selectedPiece[0] !== 6 && x == 2) break;
+                        if (x == 1) {
+                            if (selectedPiece[1] < 7 && tempBoard[selectedPiece[0] - x][selectedPiece[1] + 1].slice(0, 1) === 'b') {
+                                tempBoard[selectedPiece[0] - x][selectedPiece[1] + 1] = tempBoard[selectedPiece[0] - x][selectedPiece[1] + 1].slice(0, 2) + "et";
+                                setBoard(tempBoard);
+                            }
+                            if (selectedPiece[1] > 0 && tempBoard[selectedPiece[0] - x][selectedPiece[1] - 1].slice(0, 1) === 'b') {
+                                tempBoard[selectedPiece[0] - x][selectedPiece[1] - 1] = tempBoard[selectedPiece[0] - x][selectedPiece[1] - 1].slice(0, 2) + "et";
+                                setBoard(tempBoard);
+                            }
                         }
 
                         if (!board[selectedPiece[0] - x][selectedPiece[1]]) {
@@ -775,13 +779,16 @@ const Board = () => {
                 case 'bp':
                     console.log(`Piece ${tempBoard[selectedPiece[0]][selectedPiece[1] - 1]} at position: [${selectedPiece[0]}, ${selectedPiece[1]}]`);
                     for (let x = 1; x <= 2; x++) {
-                        if (selectedPiece[1] < 7 && tempBoard[selectedPiece[0] + x][selectedPiece[1] + 1].slice(0, 1) === 'w') {
-                            tempBoard[selectedPiece[0] + x][selectedPiece[1] + 1] = tempBoard[selectedPiece[0] + x][selectedPiece[1] + 1].slice(0, 2) + "et";
-                            setBoard(tempBoard);
-                        }
-                        if (selectedPiece[1] > 0 && tempBoard[selectedPiece[0] + x][selectedPiece[1] - 1].slice(0, 1) === 'w') {
-                            tempBoard[selectedPiece[0] + x][selectedPiece[1] - 1] = tempBoard[selectedPiece[0] + x][selectedPiece[1] - 1].slice(0, 2) + "et";
-                            setBoard(tempBoard);
+                        if (selectedPiece[0] !== 1 && x == 2) break;
+                        if (x == 1) {
+                            if (selectedPiece[1] < 7 && tempBoard[selectedPiece[0] + x][selectedPiece[1] + 1].slice(0, 1) === 'w') {
+                                tempBoard[selectedPiece[0] + x][selectedPiece[1] + 1] = tempBoard[selectedPiece[0] + x][selectedPiece[1] + 1].slice(0, 2) + "et";
+                                setBoard(tempBoard);
+                            }
+                            if (selectedPiece[1] > 0 && tempBoard[selectedPiece[0] + x][selectedPiece[1] - 1].slice(0, 1) === 'w') {
+                                tempBoard[selectedPiece[0] + x][selectedPiece[1] - 1] = tempBoard[selectedPiece[0] + x][selectedPiece[1] - 1].slice(0, 2) + "et";
+                                setBoard(tempBoard);
+                            }
                         }
 
                         if (!board[selectedPiece[0] + x][selectedPiece[1]]) {
@@ -1221,7 +1228,7 @@ const Board = () => {
         }
     }, [selectedPiece])
 
-    const deletePossibleMovimentsMarks = (tempBoard: string[][]) => {
+    const deleteAnyMovimentMark = (tempBoard: string[][]) => {
         tempBoard.map((rowBoard, rowIndex) => {
             rowBoard.map((position, columnIndex) => {
                 if (position === 'pm') {
@@ -1234,15 +1241,33 @@ const Board = () => {
         })
     }
 
+    // Update and remove any move marks after each move
     useEffect(() => {
         const tempBoard = board;
-        deletePossibleMovimentsMarks(tempBoard);
+        deleteAnyMovimentMark(tempBoard);
         setBoard(tempBoard);
     }, [board]);
 
+    // Reset game after 50 moves.
+    useEffect(() => {
+        if (totalMoves == 50) {
+            setTimeout(() => {
+                setShowMessage(true);
+                setGameIsFinished(true);
+                setMessage("Total moves amount reached. Resetting the game...")
+            }, 15);
+            setTimeout(() => {
+                setBoard(intialBoardState);
+                setTotalMoves(0);
+                setGameIsFinished(false);
+                setIsWhiteTurn(true);
+            }, 3000)
+        }
+    }, [totalMoves])
+
     return (
         <>
-            <section className={styles.game}>
+            <section className={`${styles.game} ${gameIsFinished && styles.gameFinished}`}>
                 <div className={styles.board}>
                     {board.map((row, rowIndex) => (
                         row.map((piece, columnIndex) => (
@@ -1261,7 +1286,7 @@ const Board = () => {
                     ))}
                 </div>
             </section>
-            <Message message={turnMessage} showMessage={showMessage} setShowMessage={setShowMessage} />
+            <Message message={message} showMessage={showMessage} setShowMessage={setShowMessage} />
         </>
     )
 };
