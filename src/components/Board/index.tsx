@@ -19,25 +19,29 @@ const Board = () => {
     const [selectedPiece, setSelectedPiece] = useState<number[] | null>(null);
     const [gameIsFinished, setGameIsFinished] = useState<boolean>(false);
     const [_, setPieceIsSelected] = useState<boolean>(false);
-    const [isWhiteTurn, setIsWhiteTurn] = useState<boolean>(true);
+    const [isWhiteTurn, setIsWhiteTurn] = useState<boolean>(false);
     const [showMessage, setShowMessage] = useState<boolean>(false);
     const [message, setMessage] = useState<string>("");
     const [openPromotionSelection, setOpenPromotionSelection] = useState<boolean>(false);
     const [pieceToSubstituteWith, setPieceToSubstituteWith] = useState<string>("");
     const [lastMove, setLastMove] = useState<number[]>([]);
     const [renderScreen, setRenderScreen] = useState<string>("");
+    const [checkCastleWhite, setCheckCastleWhite] = useState<boolean[]>([false, false, false]);
+    const [checkCastleBlack, setCheckCastleBlack] = useState<boolean[]>([false, false, false]);
 
     const clickField = (row: number, column: number, piece: string) => {
         if (checkPlayerTurn(piece)) return;
+
+        // Unselect piece if click on already selected one.
+        if (selectedPiece && row === selectedPiece[0] && column === selectedPiece[1]) {
+            return unselectPiece()
+        }
 
         if (selectedPiece && checkIfMovementIsValid(row, column, board[selectedPiece![0]][selectedPiece![1]])) {
             movePiece(row, column);
             unselectPiece()
         } else if (piece) {
-            // Unselect piece if click on already selected one.
-            if (selectedPiece && row === selectedPiece[0] && column === selectedPiece[1]) {
-                return unselectPiece()
-            }
+            // Don't do anything in case the player select a piece of a different color
             if (piece !== 'pm' && selectedPiece && piece.slice(0, 1) !== board[selectedPiece![0]][selectedPiece![1]].slice(0, 1)) {
                 return;
             }
@@ -45,6 +49,7 @@ const Board = () => {
                 const tempBoard = [...board];
                 deleteAnyMovimentMark(tempBoard);
             }
+            // Select the piece 
             if (piece !== 'pm') {
                 setPieceIsSelected(true);
                 setSelectedPiece([row, column]);
@@ -71,7 +76,7 @@ const Board = () => {
     }
 
     const unselectPiece = () => {
-        const tempBoard = [...board];
+        const tempBoard = board;
         deleteAnyMovimentMark(tempBoard);
         setPieceIsSelected(false);
         return setSelectedPiece(null)
@@ -80,6 +85,7 @@ const Board = () => {
     const checkIfMovementIsValid = (row: number, column: number, piece: string) => {
         let squarePosition = board[row][column];
         const rowDifference = Math.abs(row - selectedPiece![0]), columnDifference = Math.abs(column - selectedPiece![1]);
+        const tempBoard = board;
         switch (piece) {
             case 'wp':
                 if (checkIfIsSameColumn(column)) {
@@ -166,6 +172,28 @@ const Board = () => {
                 return checkHorseMove(row, column, piece, squarePosition);
                 break;
             case "wk":
+                if (checkCastleWhite[0] === false && !board[selectedPiece![0]][selectedPiece![1] + 1] && !board[selectedPiece![0]][selectedPiece![1] + 2]) {
+                    if (row === 7 && column === 6 && checkCastleWhite[2] === false) {
+                        tempBoard[row][column - 1] = 'wr';
+                        tempBoard[row][column + 1] = '';
+                        new Audio("./castle.mp3").play();
+                        const castleWhite = checkCastleWhite;
+                        castleWhite[0] = true;
+                        castleWhite[2] = true;
+                        setCheckCastleWhite(castleWhite);
+                        return true;
+                    } else if (row === 7 && column === 2 && checkCastleWhite[1] === false) {
+                        tempBoard[row][column + 1] = 'wr';
+                        tempBoard[row][column - 2] = '';
+                        new Audio("./castle.mp3").play();
+                        const castleWhite = checkCastleWhite;
+                        castleWhite[0] = true;
+                        castleWhite[1] = true;
+                        setCheckCastleWhite(castleWhite);
+                        return true;
+                    }
+                }
+
                 if (rowDifference === 1 || columnDifference === 1) {
                     if (checkIfMovimentIsDiagonal(row, column)) {
                         return checkSquare(piece, squarePosition);
@@ -177,6 +205,7 @@ const Board = () => {
                         return checkSquare(piece, squarePosition);
                     }
                 }
+
                 break;
             case "bk":
                 if (rowDifference === 1 || columnDifference === 1) {
@@ -293,7 +322,7 @@ const Board = () => {
         const tempBoard = board;
         tempBoard[row][column] = pieceMoving;
         tempBoard[selectedPiece![0]][selectedPiece![1]] = '';
-        if ((row === 0 || row === 7) && board[selectedPiece![0]][selectedPiece![1]].slice(1, 2) === 'p') {
+        if ((row === 0 || row === 7) && pieceMoving.slice(1, 2) === 'p') {
             setOpenPromotionSelection(true);
         }
         setBoard(tempBoard)
@@ -699,8 +728,17 @@ const Board = () => {
                     }
                     break;
                 case 'wk':
-                    console.log(`Piece ${tempBoard[selectedPiece[0]][selectedPiece[1]]} at position: [${selectedPiece[0]}, ${selectedPiece[1]}]`);
                     x = selectedPiece[0], y = selectedPiece[1];
+                    if (tempBoard[x][y].slice(0, 2) === 'wk' && checkCastleWhite[0] === false && checkCastleWhite[2] === false &&
+                        !tempBoard[selectedPiece![0]][selectedPiece![1] + 1] && !tempBoard[selectedPiece![0]][selectedPiece![1] + 2]) {
+                        tempBoard[x][y + 2] = 'pm';
+                        setBoard(tempBoard);
+                    }
+                    if (tempBoard[x][y].slice(0, 2) === 'wk' && checkCastleWhite[0] === false && checkCastleWhite[1] === false &&
+                        !tempBoard[selectedPiece![0]][selectedPiece![1] - 1] && !tempBoard[selectedPiece![0]][selectedPiece![1] - 2] && !tempBoard[selectedPiece![0]][selectedPiece![1] - 3]) {
+                        tempBoard[x][y - 2] = 'pm';
+                        setBoard(tempBoard);
+                    }
                     if (x > 0) {
                         if (!board[x - 1][y]) {
                             tempBoard[x - 1][y] = 'pm';
@@ -774,7 +812,6 @@ const Board = () => {
                     }
                     break;
                 case 'bp':
-                    console.log(`Piece ${tempBoard[selectedPiece[0]][selectedPiece[1] - 1]} at position: [${selectedPiece[0]}, ${selectedPiece[1]}]`);
                     for (let x = 1; x <= 2; x++) {
                         if (selectedPiece[0] !== 1 && x == 2) break;
                         if (x == 1) {
@@ -1147,8 +1184,18 @@ const Board = () => {
                     }
                     break;
                 case 'bk':
-                    console.log(`Piece ${tempBoard[selectedPiece[0]][selectedPiece[1]]} at position: [${selectedPiece[0]}, ${selectedPiece[1]}]`);
                     x = selectedPiece[0], y = selectedPiece[1];
+                    if (tempBoard[x][y].slice(0, 2) === 'bk' && checkCastleWhite[0] === false && checkCastleWhite[2] === false &&
+                        !tempBoard[selectedPiece![0]][selectedPiece![1] + 1] && !tempBoard[selectedPiece![0]][selectedPiece![1] + 2]) {
+                        tempBoard[x][y + 2] = 'pm';
+                        setBoard(tempBoard);
+                    }
+                    if (tempBoard[x][y].slice(0, 2) === 'bk' && checkCastleWhite[0] === false && checkCastleWhite[1] === false &&
+                        !tempBoard[selectedPiece![0]][selectedPiece![1] - 1] && !tempBoard[selectedPiece![0]][selectedPiece![1] - 2] && !tempBoard[selectedPiece![0]][selectedPiece![1] - 3]) {
+                        tempBoard[x][y - 2] = 'pm';
+                        setBoard(tempBoard);
+                    }
+
                     if (x > 0) {
                         if (!board[x - 1][y]) {
                             tempBoard[x - 1][y] = 'pm';
@@ -1262,6 +1309,7 @@ const Board = () => {
         }
     }, [totalMoves])
 
+    // Updates the board when you choose a piece to promote
     const udpateBord = () => {
         const tempBoard = board;
         if (lastMove.length > 0) {
@@ -1285,7 +1333,7 @@ const Board = () => {
                         row.map((piece, columnIndex) => (
                             <div
                                 className={`
-                                ${rowIndex % 2 == 0 ? (columnIndex % 2 == 0 ? styles.green : styles.yellow) : (columnIndex % 2 == 0 ? styles.yellow : styles.green)}
+                                ${rowIndex % 2 == 0 ? (columnIndex % 2 == 0 ? styles.yellow : styles.green) : (columnIndex % 2 == 0 ? styles.green : styles.yellow)}
                                 ${(selectedPiece && rowIndex == selectedPiece[0] && columnIndex == selectedPiece[1]) && styles.active}
                                 ${piece === 'pm' && styles.possibleMoviment}
             `}

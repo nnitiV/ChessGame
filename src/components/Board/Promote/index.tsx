@@ -10,6 +10,7 @@ const Promote = ({ openPromotionSelection, setOpenPromotionSelection, setPieceTo
     const selectAndClose = (piece: string) => {
         setOpenPromotionSelection(false);
         setPieceToSubstituteWith(piece);
+        new Audio("./promote.mp3").play();
     }
     return (
         <div className={`${styles.wrapper} ${openPromotionSelection && styles.active}`}>
