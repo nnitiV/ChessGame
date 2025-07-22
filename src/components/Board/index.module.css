@@ -37,6 +37,10 @@
     border-color: var(--beige-1);
 }
 
+.game .board div.danger {
+    background-color: var(--red-50-1);
+}
+
 .game .board div.yellow {
     background: var(--yellow-3);
 }
