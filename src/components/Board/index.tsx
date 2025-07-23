@@ -4,26 +4,26 @@ import Message from "./message";
 import Promote from "./Promote";
 
 const Board = () => {
-    const intialBoardState = [
-        ["br", "bn", "bb", "bq", "bk", "bb", "bn", "br"],
-        ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
-        ["", "", "", "", "", "", "", ""],
-        ["", "", "", "", "", "", "", ""],
-        ["", "", "", "", "", "", "", ""],
-        ["", "", "", "", "", "", "", ""],
-        ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
-        ["wr", "wn", "wb", "wq", "wk", "wb", "wn", "wr"]
-    ];
     // const intialBoardState = [
+    //     ["br", "bn", "bb", "bq", "bk", "bb", "bn", "br"],
+    //     ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
     //     ["", "", "", "", "", "", "", ""],
     //     ["", "", "", "", "", "", "", ""],
-    //     ["bk", "", "", "", "", "", "", ""],
-    //     ["", "", "", "", "", "", "", ""],
-    //     ["", "wp", "", "", "", "", "", ""],
     //     ["", "", "", "", "", "", "", ""],
     //     ["", "", "", "", "", "", "", ""],
-    //     ["", "", "", "", "", "", "", ""]
+    //     ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
+    //     ["wr", "wn", "wb", "wq", "wk", "wb", "wn", "wr"]
     // ];
+    const intialBoardState = [
+        ["", "", "", "", "", "", "", ""],
+        ["", "", "", "", "", "", "", ""],
+        ["bk", "", "", "", "", "", "", ""],
+        ["", "", "", "", "", "", "", ""],
+        ["", "", "wq", "", "", "", "", ""],
+        ["", "", "", "", "", "", "", ""],
+        ["", "", "", "", "", "", "", ""],
+        ["", "", "", "", "", "", "", ""]
+    ];
     const [board, setBoard] = useState<string[][]>(intialBoardState);
     const [totalMoves, setTotalMoves] = useState<number>(0);
     const [selectedPiece, setSelectedPiece] = useState<number[] | null>(null);
@@ -38,8 +38,10 @@ const Board = () => {
     const [renderScreen, setRenderScreen] = useState<string>("");
     const [checkCastleWhite, setCheckCastleWhite] = useState<boolean[]>([false, false, false]);
     const [checkCastleBlack, setCheckCastleBlack] = useState<boolean[]>([false, false, false]);
+    const [checked, setChecked] = useState<[string, number]>(["", 0]);
 
     const clickField = (row: number, column: number, piece: string) => {
+        console.log(checked);
         if (checkPlayerTurn(piece)) return;
 
         // Unselect piece if click on already selected one.
@@ -48,6 +50,31 @@ const Board = () => {
         }
 
         if (selectedPiece && checkIfMovementIsValid(row, column, board[selectedPiece![0]][selectedPiece![1]])) {
+            let itHasCheck: boolean = false;
+            if (board[selectedPiece![0]][selectedPiece![1]].slice(1, 2) === 'k') {
+                let fieldPosition: number[] = [];
+                board.map((row, rowIndex) => {
+                    row.map((position, columIndex) => {
+                        if (checkCheck(position, rowIndex, columIndex)) {
+                            itHasCheck = true;
+                            fieldPosition = [rowIndex, columIndex];
+                        }
+                        console.log(itHasCheck);
+                    })
+                });
+                let tempBoard = board;
+                if (!itHasCheck && tempBoard[selectedPiece![0]][selectedPiece![1]].slice(1, 2) === 'k') {
+                    tempBoard[selectedPiece![0]][selectedPiece![1]] = tempBoard[selectedPiece![0]][selectedPiece![1]].slice(0, 2);
+                    setBoard(tempBoard);
+                }
+                if (itHasCheck) {
+                    if (board[fieldPosition[0]][fieldPosition[1]].slice(0, 1) === 'w') {
+                        setChecked(prev => ['bk', prev[1] + 1]);
+                    } else if (board[fieldPosition[0]][fieldPosition[1]].slice(0, 1) === 'b') {
+                        setChecked(prev => ['wk', prev[1] + 1]);
+                    }
+                }
+            }
             movePiece(row, column);
             unselectPiece()
         } else if (piece) {
@@ -93,7 +120,7 @@ const Board = () => {
         let squarePosition = board[row][column];
         const rowDifference = Math.abs(row - selectedPiece![0]), columnDifference = Math.abs(column - selectedPiece![1]);
         const tempBoard = board;
-        switch (piece) {
+        switch (piece.slice(0, 2)) {
             case 'wp':
                 if (checkIfIsSameColumn(column)) {
                     if (selectedPiece![0] === 6) {
@@ -356,7 +383,7 @@ const Board = () => {
         return false;
     };
 
-    const movePiece = (row: number, column: number) => {
+    const movePiece = (row: number, column: number, wasChecked: boolean = false) => {
         const pieceMoving = board[selectedPiece![0]][selectedPiece![1]];
         if (selectedPiece![0] === 7 && selectedPiece![1] === 4 && pieceMoving === 'wk') {
             let whiteCastleCheck = checkCastleWhite;
@@ -375,11 +402,18 @@ const Board = () => {
             setOpenPromotionSelection(true);
         }
         setBoard(tempBoard)
+        setRenderScreen(prev => prev.slice(0, 1) + 'a');
         setTotalMoves(totalMove => totalMove + 1);
         new Audio('./move-self.mp3').play();
         setLastMove([row, column]);
         checkCheck(pieceMoving, row, column);
         setIsWhiteTurn(prev => !prev);
+        if (checked) {
+            if (checked[0] === 'bk' && checked[1] + 1 === 2) {
+                alert("You lost!");
+                setBoard(intialBoardState);
+            }
+        }
     };
 
     const checkCheck = (pieceMoving: string, row: number, column: number) => {
@@ -387,17 +421,25 @@ const Board = () => {
         switch (pieceMoving) {
             case 'wp':
                 if (board[row - 1][column + 1] === 'bk') {
+                    tempBoard[row - 1][column + 1] = tempBoard[row - 1][column + 1] + 'dg';
+                    setBoard(tempBoard);
                     return new Audio("move-check.mp3").play();
                 }
                 if (board[row - 1][column - 1] === 'bk') {
+                    tempBoard[row - 1][column - 1] = tempBoard[row - 1][column - 1] + 'dg';
+                    setBoard(tempBoard);
                     return new Audio("move-check.mp3").play();
                 }
                 break;
             case 'bp':
                 if (board[row + 1][column + 1] === 'wk') {
+                    tempBoard[row + 1][column + 1] = tempBoard[row + 1][column + 1] + 'dg';
+                    setBoard(tempBoard);
                     return new Audio("move-check.mp3").play();
                 }
                 if (board[row + 1][column - 1] === 'wk') {
+                    tempBoard[row + 1][column - 1] = tempBoard[row + 1][column - 1] + 'dg';
+                    setBoard(tempBoard);
                     return new Audio("move-check.mp3").play();
                 }
                 break;
@@ -407,6 +449,8 @@ const Board = () => {
                         const field = board[x][column];
                         if (field) {
                             if (field === 'bk') {
+                                tempBoard[x][column] = tempBoard[x][column] + 'dg';
+                                setBoard(tempBoard);
                                 return new Audio("move-check.mp3").play();
                             } else {
                                 return;
@@ -419,6 +463,8 @@ const Board = () => {
                         const field = board[x][column];
                         if (field) {
                             if (field === 'bk') {
+                                tempBoard[x][column] = tempBoard[x][column] + 'dg';
+                                setBoard(tempBoard);
                                 return new Audio("move-check.mp3").play();
                             } else {
                                 return;
@@ -431,6 +477,8 @@ const Board = () => {
                         const field = board[row][y];
                         if (field) {
                             if (field === 'bk') {
+                                tempBoard[row][y] = tempBoard[row][y] + 'dg';
+                                setBoard(tempBoard);
                                 return new Audio("move-check.mp3").play();
                             } else {
                                 return;
@@ -443,6 +491,8 @@ const Board = () => {
                         const field = board[row][y];
                         if (field) {
                             if (field === 'bk') {
+                                tempBoard[row][y] = tempBoard[row][y] + 'dg';
+                                setBoard(tempBoard);
                                 return new Audio("move-check.mp3").play();
                             } else {
                                 return;
@@ -457,6 +507,8 @@ const Board = () => {
                         const field = board[x][column];
                         if (field) {
                             if (field === 'wk') {
+                                tempBoard[x][column] = tempBoard[x][column] + 'dg';
+                                setBoard(tempBoard);
                                 return new Audio("move-check.mp3").play();
                             } else {
                                 return;
@@ -469,6 +521,8 @@ const Board = () => {
                         const field = board[x][column];
                         if (field) {
                             if (field === 'wk') {
+                                tempBoard[x][column] = tempBoard[x][column] + 'dg';
+                                setBoard(tempBoard);
                                 return new Audio("move-check.mp3").play();
                             } else {
                                 return;
@@ -481,6 +535,9 @@ const Board = () => {
                         const field = board[row][y];
                         if (field) {
                             if (field === 'wk') {
+
+                                tempBoard[row][y] = tempBoard[row][y] + 'dg';
+                                setBoard(tempBoard);
                                 return new Audio("move-check.mp3").play();
                             } else {
                                 return;
@@ -493,6 +550,9 @@ const Board = () => {
                         const field = board[row][y];
                         if (field) {
                             if (field === 'wk') {
+
+                                tempBoard[row][y] = tempBoard[row][y] + 'dg';
+                                setBoard(tempBoard);
                                 return new Audio("move-check.mp3").play();
                             } else {
                                 return;
@@ -508,6 +568,8 @@ const Board = () => {
                             const field = board[x][y];
                             if (field) {
                                 if (field === 'bk') {
+                                    tempBoard[x][y] = tempBoard[x][y] + 'dg';
+                                    setBoard(tempBoard);
                                     return new Audio("move-check.mp3").play();
                                 } else {
                                     return;
@@ -520,6 +582,8 @@ const Board = () => {
                             const field = board[x][y];
                             if (field) {
                                 if (field === 'bk') {
+                                    tempBoard[x][y] = tempBoard[x][y] + 'dg';
+                                    setBoard(tempBoard);
                                     return new Audio("move-check.mp3").play();
                                 } else {
                                     return;
@@ -534,6 +598,8 @@ const Board = () => {
                             const field = board[x][y];
                             if (field) {
                                 if (field === 'bk') {
+                                    tempBoard[x][y] = tempBoard[x][y] + 'dg';
+                                    setBoard(tempBoard);
                                     return new Audio("move-check.mp3").play();
                                 } else {
                                     return;
@@ -546,6 +612,8 @@ const Board = () => {
                             const field = board[x][y];
                             if (field) {
                                 if (field === 'bk') {
+                                    tempBoard[x][y] = tempBoard[x][y] + 'dg';
+                                    setBoard(tempBoard);
                                     return new Audio("move-check.mp3").play();
                                 } else {
                                     return;
@@ -562,6 +630,8 @@ const Board = () => {
                             const field = board[x][y];
                             if (field) {
                                 if (field === 'wk') {
+                                    tempBoard[x][y] = tempBoard[x][y] + 'dg';
+                                    setBoard(tempBoard);
                                     return new Audio("move-check.mp3").play();
                                 } else {
                                     return;
@@ -574,6 +644,8 @@ const Board = () => {
                             const field = board[x][y];
                             if (field) {
                                 if (field === 'wk') {
+                                    tempBoard[x][y] = tempBoard[x][y] + 'dg';
+                                    setBoard(tempBoard);
                                     return new Audio("move-check.mp3").play();
                                 } else {
                                     return;
@@ -588,6 +660,8 @@ const Board = () => {
                             const field = board[x][y];
                             if (field) {
                                 if (field === 'wk') {
+                                    tempBoard[x][y] = tempBoard[x][y] + 'dg';
+                                    setBoard(tempBoard);
                                     return new Audio("move-check.mp3").play();
                                 } else {
                                     return;
@@ -600,6 +674,8 @@ const Board = () => {
                             const field = board[x][y];
                             if (field) {
                                 if (field === 'wk') {
+                                    tempBoard[x][y] = tempBoard[x][y] + 'dg';
+                                    setBoard(tempBoard);
                                     return new Audio("move-check.mp3").play();
                                 } else {
                                     return;
@@ -613,6 +689,8 @@ const Board = () => {
                 if (row > 0 && column < 7) {
                     if (row > 1) {
                         if (board[row - 2][column + 1] === 'bk') {
+                            tempBoard[row - 2][column + 1] = tempBoard[row - 2][column + 1] + 'dg';
+                            setBoard(tempBoard);
                             return new Audio("move-check.mp3").play();
                         }
                     }
@@ -620,6 +698,8 @@ const Board = () => {
                     if (column < 6) {
                         console.log(board[row - 1][column + 2]);
                         if (board[row - 1][column + 2] === 'bk') {
+                            tempBoard[row - 1][column + 2] = tempBoard[row - 1][column + 2] + 'dg';
+                            setBoard(tempBoard);
                             return new Audio("move-check.mp3").play();
                         }
                     }
@@ -628,12 +708,16 @@ const Board = () => {
                 if (row < 7 && column > 0) {
                     if (row < 6) {
                         if (board[row + 2][column - 1] === 'bk') {
+                            tempBoard[row + 2][column - 1] = tempBoard[row + 2][column - 1] + 'dg';
+                            setBoard(tempBoard);
                             return new Audio("move-check.mp3").play();
                         }
                     }
 
                     if (column > 1) {
                         if (board[row + 1][column - 2] === 'bk') {
+                            tempBoard[row + 1][column - 2] = tempBoard[row + 1][column - 2] + 'dg';
+                            setBoard(tempBoard);
                             return new Audio("move-check.mp3").play();
                         }
                     }
@@ -642,12 +726,16 @@ const Board = () => {
                 if (row < 7 && column < 7) {
                     if (row < 6) {
                         if (board[row + 2][column + 1] === 'bk') {
+                            tempBoard[row + 2][column + 1] = tempBoard[row + 2][column + 1] + 'dg';
+                            setBoard(tempBoard);
                             return new Audio("move-check.mp3").play();
                         }
                     }
 
                     if (column < 6) {
                         if (board[row + 1][column + 2] === 'bk') {
+                            tempBoard[row + 1][column + 2] = tempBoard[row + 1][column + 2] + 'dg';
+                            setBoard(tempBoard);
                             return new Audio("move-check.mp3").play();
                         }
                     }
@@ -656,12 +744,16 @@ const Board = () => {
                 if (row > 0 && column < 7) {
                     if (row > 1) {
                         if (board[row - 2][column - 1] === 'bk') {
+                            tempBoard[row - 2][column - 1] = tempBoard[row - 2][column - 1] + 'dg';
+                            setBoard(tempBoard);
                             return new Audio("move-check.mp3").play();
                         }
                     }
 
                     if (column > 1) {
                         if (board[row - 1][column - 2] === 'bk') {
+                            tempBoard[row - 1][column - 2] = tempBoard[row - 1][column - 2] + 'dg';
+                            setBoard(tempBoard);
                             return new Audio("move-check.mp3").play();
                         }
                     }
@@ -728,35 +820,38 @@ const Board = () => {
             case 'wq':
                 if (row < 7) {
                     for (let x = row + 1; x <= 7; x++) {
-                        const field = board[x][column];
+                        const field = board[x][column].slice(0, 2);
                         if (field) {
                             if (field === 'bk') {
-                                tempBoard[x][column] = tempBoard[x][column] + 'dg';
+                                tempBoard[x][column] = field + 'dg';
                                 setBoard(tempBoard);
-                                return new Audio("move-check.mp3").play();
+                                new Audio("move-check.mp3").play();
+                                return true;
                             }
                         }
                     }
                     if (column < 7) {
                         for (let x = row + 1, y = column + 1; x <= 7 && y <= 7; x++, y++) {
-                            const field = board[x][y];
+                            const field = board[x][y].slice(0, 2);
                             if (field) {
                                 if (field === 'bk') {
-                                    tempBoard[x][y] = tempBoard[x][y] + 'dg';
+                                    tempBoard[x][y] = field + 'dg';
                                     setBoard(tempBoard);
-                                    return new Audio("move-check.mp3").play();
+                                    new Audio("move-check.mp3").play();
+                                    return true;
                                 }
                             }
                         }
                     }
                     if (column > 0) {
                         for (let x = row + 1, y = column - 1; x <= 7 && y >= 0; x++, y--) {
-                            const field = board[x][y];
+                            const field = board[x][y].slice(0, 2);
                             if (field) {
                                 if (field === 'bk') {
-                                    tempBoard[x][y] = tempBoard[x][y] + 'dg';
+                                    tempBoard[x][y] = field + 'dg';
                                     setBoard(tempBoard);
-                                    return new Audio("move-check.mp3").play();
+                                    new Audio("move-check.mp3").play();
+                                    return true;
                                 }
                             }
                         }
@@ -764,35 +859,39 @@ const Board = () => {
                 }
                 if (row > 0) {
                     for (let x = row - 1; x >= 0; x--) {
-                        const field = board[x][column];
+                        const field = board[x][column].slice(0, 2);
                         if (field) {
                             if (field === 'bk') {
-                                tempBoard[x][column] = tempBoard[x][column] + 'dg';
+                                tempBoard[x][column] = field + 'dg';
                                 setBoard(tempBoard);
-                                return new Audio("move-check.mp3").play();
+                                new Audio("move-check.mp3").play();
+                                return true;
                             }
                         }
                     }
                     if (column < 7) {
                         for (let x = row - 1, y = column + 1; x >= 0 && y <= 7; x--, y++) {
-                            const field = board[x][y];
+                            const field = board[x][y].slice(0, 2);
                             if (field) {
                                 if (field === 'bk') {
-                                    tempBoard[x][y] = tempBoard[x][y] + 'dg';
+                                    tempBoard[x][y] = field + 'dg';
                                     setBoard(tempBoard);
-                                    return new Audio("move-check.mp3").play();
+                                    new Audio("move-check.mp3").play();
+                                    return true;
                                 }
                             }
                         }
                     }
                     if (column > 0) {
                         for (let x = row - 1, y = column - 1; x >= 0 && y >= 0; x--, y--) {
-                            const field = board[x][y];
+                            const field = board[x][y].slice(0, 2);
                             if (field) {
                                 if (field === 'bk') {
-                                    tempBoard[x][y] = tempBoard[x][y] + 'dg';
+                                    tempBoard[x][y] = field + 'dg';
                                     setBoard(tempBoard);
-                                    return new Audio("move-check.mp3").play();
+                                    console.log("Check")
+                                    new Audio("move-check.mp3").play();
+                                    return true;
                                 }
                             }
                         }
@@ -800,24 +899,26 @@ const Board = () => {
                 }
                 if (column > 0) {
                     for (let y = column - 1; y >= 0; y--) {
-                        const field = board[row][y];
+                        const field = board[row][y].slice(0, 2);
                         if (field) {
                             if (field === 'bk') {
-                                tempBoard[row][y] = tempBoard[row][y] + 'dg';
+                                tempBoard[row][y] = field + 'dg';
                                 setBoard(tempBoard);
-                                return new Audio("move-check.mp3").play();
+                                new Audio("move-check.mp3").play();
+                                return true;
                             }
                         }
                     }
                 }
                 if (column < 7) {
                     for (let y = column + 1; y <= 7; y++) {
-                        const field = board[row][y];
+                        const field = board[row][y].slice(0, 2);
                         if (field) {
                             if (field === 'bk') {
-                                tempBoard[row][y] = tempBoard[row][y] + 'dg';
+                                tempBoard[row][y] = field + 'dg';
                                 setBoard(tempBoard);
-                                return new Audio("move-check.mp3").play();
+                                new Audio("move-check.mp3").play();
+                                return true;
                             }
                         }
                     }
@@ -945,7 +1046,7 @@ const Board = () => {
         let x = -1, y = -1;
         if (selectedPiece) {
             const piece = board[selectedPiece[0]][selectedPiece[1]];
-            switch (piece) {
+            switch (piece.slice(0, 2)) {
                 case 'wp':
                     console.log(`Piece ${tempBoard[selectedPiece[0]][selectedPiece[1] - 1]} at position: [${selectedPiece[0]}, ${selectedPiece[1]}]`);
                     for (let x = 1; x <= 2; x++) {
@@ -1320,6 +1421,7 @@ const Board = () => {
                     }
                     break;
                 case 'wk':
+                    console.log("Teste")
                     x = selectedPiece[0], y = selectedPiece[1];
                     if (tempBoard[x][y].slice(0, 2) === 'wk' && tempBoard[x][0].slice(0, 2) === 'wr' && checkCastleWhite[0] === false && checkCastleWhite[2] === false &&
                         !tempBoard[selectedPiece![0]][selectedPiece![1] + 1] && !tempBoard[selectedPiece![0]][selectedPiece![1] + 2]) {
@@ -1883,6 +1985,7 @@ const Board = () => {
         const tempBoard = board;
         deleteAnyMovimentMark(tempBoard);
         setBoard(tempBoard);
+
     }, [board]);
 
     // Reset game after 50 moves.
@@ -1916,6 +2019,27 @@ const Board = () => {
     useEffect(() => {
         udpateBord();
     }, [pieceToSubstituteWith]);
+
+    useEffect(() => {
+        console.log(checked)
+        let itHasCheck: boolean = false;
+        let fieldPosition: number[] = [];
+        board.map((row, rowIndex) => {
+            row.map((position, columIndex) => {
+                if (checkCheck(position, rowIndex, columIndex)) {
+                    itHasCheck = true;
+                    fieldPosition = [rowIndex, columIndex];
+                }
+            })
+        });
+        if (itHasCheck) {
+            if (board[fieldPosition[0]][fieldPosition[1]].slice(0, 1) === 'w') {
+                setChecked(prev => ['bk', 1]);
+            } else if (board[fieldPosition[0]][fieldPosition[1]].slice(0, 1) === 'b') {
+                setChecked(prev => ['wk', 1]);
+            }
+        }
+    }, []);
 
     return (
         <>
