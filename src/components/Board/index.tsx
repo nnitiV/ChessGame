@@ -17,11 +17,11 @@ const Board = () => {
     const intialBoardState = [
         ["", "", "", "", "", "", "", ""],
         ["", "", "", "", "", "", "", ""],
-        ["bk", "", "", "", "", "", "", ""],
-        ["", "", "", "", "", "", "", ""],
-        ["", "", "wq", "", "", "", "", ""],
         ["", "", "", "", "", "", "", ""],
         ["", "", "", "", "", "", "", ""],
+        ["", "", "", "wq", "", "", "", ""],
+        ["", "", "", "", "", "", "", ""],
+        ["", "", "", "", "bk", "", "", ""],
         ["", "", "", "", "", "", "", ""]
     ];
     const [board, setBoard] = useState<string[][]>(intialBoardState);
@@ -29,7 +29,7 @@ const Board = () => {
     const [selectedPiece, setSelectedPiece] = useState<number[] | null>(null);
     const [gameIsFinished, setGameIsFinished] = useState<boolean>(false);
     const [_, setPieceIsSelected] = useState<boolean>(false);
-    const [isWhiteTurn, setIsWhiteTurn] = useState<boolean>(true);
+    const [isWhiteTurn, setIsWhiteTurn] = useState<boolean>(false);
     const [showMessage, setShowMessage] = useState<boolean>(false);
     const [message, setMessage] = useState<string>("");
     const [openPromotionSelection, setOpenPromotionSelection] = useState<boolean>(false);
@@ -41,7 +41,6 @@ const Board = () => {
     const [checked, setChecked] = useState<[string, number]>(["", 0]);
 
     const clickField = (row: number, column: number, piece: string) => {
-        console.log(checked);
         if (checkPlayerTurn(piece)) return;
 
         // Unselect piece if click on already selected one.
@@ -50,33 +49,8 @@ const Board = () => {
         }
 
         if (selectedPiece && checkIfMovementIsValid(row, column, board[selectedPiece![0]][selectedPiece![1]])) {
-            let itHasCheck: boolean = false;
-            if (board[selectedPiece![0]][selectedPiece![1]].slice(1, 2) === 'k') {
-                let fieldPosition: number[] = [];
-                board.map((row, rowIndex) => {
-                    row.map((position, columIndex) => {
-                        if (checkCheck(position, rowIndex, columIndex)) {
-                            itHasCheck = true;
-                            fieldPosition = [rowIndex, columIndex];
-                        }
-                        console.log(itHasCheck);
-                    })
-                });
-                let tempBoard = board;
-                if (!itHasCheck && tempBoard[selectedPiece![0]][selectedPiece![1]].slice(1, 2) === 'k') {
-                    tempBoard[selectedPiece![0]][selectedPiece![1]] = tempBoard[selectedPiece![0]][selectedPiece![1]].slice(0, 2);
-                    setBoard(tempBoard);
-                }
-                if (itHasCheck) {
-                    if (board[fieldPosition[0]][fieldPosition[1]].slice(0, 1) === 'w') {
-                        setChecked(prev => ['bk', prev[1] + 1]);
-                    } else if (board[fieldPosition[0]][fieldPosition[1]].slice(0, 1) === 'b') {
-                        setChecked(prev => ['wk', prev[1] + 1]);
-                    }
-                }
-            }
             movePiece(row, column);
-            unselectPiece()
+            unselectPiece();
         } else if (piece) {
             // Don't do anything in case the player select a piece of a different color
             if (piece !== 'pm' && selectedPiece && piece.slice(0, 1) !== board[selectedPiece![0]][selectedPiece![1]].slice(0, 1)) {
@@ -206,6 +180,7 @@ const Board = () => {
                 return checkHorseMove(row, column, piece, squarePosition);
                 break;
             case "wk":
+                // Castle checking
                 if (checkCastleWhite[0] === false && !board[selectedPiece![0]][selectedPiece![1] + 1] && !board[selectedPiece![0]][selectedPiece![1] + 2]) {
                     if (row === 7 && column === 6 && checkCastleWhite[2] === false) {
                         tempBoard[row][column - 1] = 'wr';
@@ -383,7 +358,7 @@ const Board = () => {
         return false;
     };
 
-    const movePiece = (row: number, column: number, wasChecked: boolean = false) => {
+    const movePiece = (row: number, column: number) => {
         const pieceMoving = board[selectedPiece![0]][selectedPiece![1]];
         if (selectedPiece![0] === 7 && selectedPiece![1] === 4 && pieceMoving === 'wk') {
             let whiteCastleCheck = checkCastleWhite;
@@ -400,6 +375,16 @@ const Board = () => {
         tempBoard[selectedPiece![0]][selectedPiece![1]] = '';
         if ((row === 0 || row === 7) && pieceMoving.slice(1, 2) === 'p') {
             setOpenPromotionSelection(true);
+        }
+        let hasCheck: boolean = false;
+        tempBoard.map((row, rIdx) => row.map((position, cIdx) => {
+            if (checkCheck(position.slice(0, 2), rIdx, cIdx)) {
+                hasCheck = true;
+                return;
+            }
+        }));
+        if (!hasCheck && pieceMoving.slice(1, 2) === 'k') {
+            tempBoard[row][column] = pieceMoving.slice(0, 2);
         }
         setBoard(tempBoard)
         setRenderScreen(prev => prev.slice(0, 1) + 'a');
@@ -889,7 +874,6 @@ const Board = () => {
                                 if (field === 'bk') {
                                     tempBoard[x][y] = field + 'dg';
                                     setBoard(tempBoard);
-                                    console.log("Check")
                                     new Audio("move-check.mp3").play();
                                     return true;
                                 }
@@ -927,7 +911,7 @@ const Board = () => {
             case 'bq':
                 if (row < 7) {
                     for (let x = row + 1; x <= 7; x++) {
-                        const field = tempBoard[x][column];
+                        const field = tempBoard[x][column].slice(0, 2);
                         if (field) {
                             if (field === 'wk') {
                                 tempBoard[x][column] = tempBoard[x][column] + 'dg';
@@ -938,7 +922,7 @@ const Board = () => {
                     }
                     if (column < 7) {
                         for (let x = row + 1, y = column + 1; x <= 7 && y <= 7; x++, y++) {
-                            const field = board[x][y];
+                            const field = board[x][y].slice(0, 2);
                             if (field) {
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
@@ -950,7 +934,7 @@ const Board = () => {
                     }
                     if (column > 0) {
                         for (let x = row + 1, y = column - 1; x <= 7 && y >= 0; x++, y--) {
-                            const field = board[x][y];
+                            const field = board[x][y].slice(0, 2);
                             if (field) {
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
@@ -963,7 +947,7 @@ const Board = () => {
                 }
                 if (row > 0) {
                     for (let x = row - 1; x >= 0; x--) {
-                        const field = board[x][column];
+                        const field = board[x][column].slice(0, 2);
                         if (field) {
                             if (field === 'wk') {
                                 tempBoard[x][column] = tempBoard[x][column] + 'dg';
@@ -974,7 +958,7 @@ const Board = () => {
                     }
                     if (column < 7) {
                         for (let x = row - 1, y = column + 1; x >= 0 && y <= 7; x--, y++) {
-                            const field = board[x][y];
+                            const field = board[x][y].slice(0, 2);
                             if (field) {
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
@@ -986,7 +970,7 @@ const Board = () => {
                     }
                     if (column > 0) {
                         for (let x = row - 1, y = column - 1; x >= 0 && y >= 0; x--, y--) {
-                            const field = board[x][y];
+                            const field = board[x][y].slice(0, 2);
                             if (field) {
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
@@ -999,7 +983,7 @@ const Board = () => {
                 }
                 if (column > 0) {
                     for (let y = column - 1; y >= 0; y--) {
-                        const field = board[row][y];
+                        const field = board[row][y].slice(0, 2);
                         if (field) {
                             if (field === 'wk') {
                                 tempBoard[row][y] = tempBoard[row][y] + 'dg';
@@ -1011,7 +995,7 @@ const Board = () => {
                 }
                 if (column < 7) {
                     for (let y = column + 1; y <= 7; y++) {
-                        const field = board[row][y];
+                        const field = board[row][y].slice(0, 2);
                         if (field) {
                             if (field === 'wk') {
                                 tempBoard[row][y] = tempBoard[row][y] + 'dg';
@@ -1421,8 +1405,8 @@ const Board = () => {
                     }
                     break;
                 case 'wk':
-                    console.log("Teste")
                     x = selectedPiece[0], y = selectedPiece[1];
+                    // Castle checks
                     if (tempBoard[x][y].slice(0, 2) === 'wk' && tempBoard[x][0].slice(0, 2) === 'wr' && checkCastleWhite[0] === false && checkCastleWhite[2] === false &&
                         !tempBoard[selectedPiece![0]][selectedPiece![1] + 1] && !tempBoard[selectedPiece![0]][selectedPiece![1] + 2]) {
                         tempBoard[x][y + 2] = 'pm';
@@ -1433,10 +1417,65 @@ const Board = () => {
                         tempBoard[x][y - 2] = 'pm';
                         setBoard(tempBoard);
                     }
+                    // Normal checks
                     if (x > 0) {
                         if (!board[x - 1][y]) {
-                            tempBoard[x - 1][y] = 'pm';
-                            setBoard(tempBoard);
+                            let hasPieceToCheckIt: boolean = false;
+                            for (let xPos = x - 1; xPos > 0; xPos--) {
+                                if (board[xPos][y].slice(0, 2) === 'bq' || board[xPos][y].slice(0, 2) === 'bb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let xPos = x - 1; xPos < 7; xPos++) {
+                                if (board[xPos][y].slice(0, 2) === 'bq' || board[xPos][y].slice(0, 2) === 'bb') {
+                                    console.log(board[xPos][y])
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let yPos = y; yPos > 0; yPos--) {
+                                if (board[x - 1][yPos].slice(0, 2) === 'bq' || board[x][yPos].slice(0, 2) === 'bb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let yPos = y; yPos < 7; yPos++) {
+                                if (board[x - 1][yPos].slice(0, 2) === 'bq' || board[x - 1][yPos].slice(0, 2) === 'bb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+
+                            for (let xPos = x - 1, yPos = y; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let xPos = x - 1, yPos = y; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+
+                            for (let xPos = x - 1, yPos = y; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let xPos = x - 1, yPos = y; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            if (!hasPieceToCheckIt) {
+                                tempBoard[x - 1][y] = 'pm';
+                                setBoard(tempBoard);
+                            }
                         } else if (board[x - 1][y].slice(0, 1) === 'b') {
                             tempBoard[x - 1][y] = tempBoard[x - 1][y].slice(0, 3) + 'et';
                             setBoard(tempBoard);
@@ -1444,16 +1483,129 @@ const Board = () => {
 
                         if (y < 7) {
                             if (!board[x - 1][y + 1]) {
-                                tempBoard[x - 1][y + 1] = 'pm';
-                                setBoard(tempBoard);
+                                let hasPieceToCheckIt: boolean = false;
+                                for (let xPos = x - 1, yPos = y + 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y + 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y + 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y + 1; yPos > 0; yPos--) {
+                                    if (board[x - 1][yPos].slice(0, 2) === 'bq' || board[x][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                    if (board[x - 1][yPos].slice(0, 2) === 'bq' || board[x - 1][yPos].slice(0, 2) === 'bb') {
+                                        console.log(board[x][yPos])
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos > 0; xPos--) {
+                                    if (board[xPos][y + 1].slice(0, 2) === 'bq' || board[xPos][y + 1].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos < 7; xPos++) {
+                                    if (board[xPos][y + 1].slice(0, 2) === 'bq' || board[xPos][y + 1].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+
+                                if (!hasPieceToCheckIt) {
+                                    tempBoard[x - 1][y + 1] = 'pm';
+                                    setBoard(tempBoard);
+                                }
                             } else if (board[x - 1][y + 1].slice(0, 1) === 'b') {
                                 tempBoard[x - 1][y + 1] = tempBoard[x - 1][y + 1].slice(0, 3) + 'et';
                                 setBoard(tempBoard);
                             }
 
                             if (!board[x][y + 1]) {
-                                tempBoard[x][y + 1] = 'pm';
-                                setBoard(tempBoard);
+                                let hasPieceToCheckIt: boolean = false;
+                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                    if (board[x][yPos].slice(0, 2) === 'bq' || board[x][yPos].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y - 1; yPos > 0; yPos--) {
+                                    if (board[x][yPos].slice(0, 2) === 'bq' || board[x][yPos].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+
+                                for (let xPos = x; xPos > 0; xPos--) {
+                                    if (board[xPos][y + 1].slice(0, 2) === 'bq' || board[xPos][y + 1].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos < 7; xPos++) {
+                                    if (board[xPos][y + 1].slice(0, 2) === 'bq' || board[xPos][y + 1].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+
+                                for (let xPos = x, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+
+                                for (let xPos = x, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y + 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                if (!hasPieceToCheckIt) {
+                                    tempBoard[x][y + 1] = 'pm';
+                                    setBoard(tempBoard);
+                                }
                             } else if (board[x][y + 1].slice(0, 1) === 'b') {
                                 tempBoard[x][y + 1] = tempBoard[x][y + 1].slice(0, 3) + 'et';
                                 setBoard(tempBoard);
@@ -1462,15 +1614,121 @@ const Board = () => {
 
                         if (y > 0) {
                             if (!board[x - 1][y - 1]) {
-                                tempBoard[x - 1][y - 1] = 'pm';
-                                setBoard(tempBoard);
+                                let hasPieceToCheckIt: boolean = false;
+                                for (let xPos = x - 1, yPos = y - 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y - 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y - 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y - 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y + 1; yPos > 0; yPos--) {
+                                    if (board[x - 1][yPos].slice(0, 2) === 'bq' || board[x][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                    if (board[x - 1][yPos].slice(0, 2) === 'bq' || board[x - 1][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos > 0; xPos--) {
+                                    if (board[xPos][y - 1].slice(0, 2) === 'bq' || board[xPos][y - 1].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos < 7; xPos++) {
+                                    if (board[xPos][y - 1].slice(0, 2) === 'bq' || board[xPos][y - 1].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                if (!hasPieceToCheckIt) {
+                                    tempBoard[x - 1][y - 1] = 'pm';
+                                    setBoard(tempBoard);
+                                }
                             } else if (board[x - 1][y - 1].slice(0, 1) === 'b') {
                                 tempBoard[x - 1][y - 1] = tempBoard[x - 1][y - 1].slice(0, 3) + 'et';
                                 setBoard(tempBoard);
                             }
+
                             if (!board[x][y - 1]) {
-                                tempBoard[x][y - 1] = 'pm';
-                                setBoard(tempBoard);
+                                let hasPieceToCheckIt: boolean = false;
+                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                    if (board[x][yPos].slice(0, 2) === 'bq' || board[x][yPos].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y - 1; yPos > 0; yPos--) {
+                                    if (board[x][yPos].slice(0, 2) === 'bq' || board[x][yPos].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y - 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y - 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos > 0; xPos--) {
+                                    if (board[xPos][y - 1].slice(0, 2) === 'bq' || board[xPos][y - 1].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos < 7; xPos++) {
+                                    if (board[xPos][y - 1].slice(0, 2) === 'bq' || board[xPos][y - 1].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+
+
+                                for (let xPos = x, yPos = y - 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y - 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+
+                                if (!hasPieceToCheckIt) {
+                                    tempBoard[x][y - 1] = 'pm';
+                                    setBoard(tempBoard);
+                                }
                             } else if (board[x][y - 1].slice(0, 1) === 'b') {
                                 tempBoard[x][y - 1] = tempBoard[x][y - 1].slice(0, 3) + 'et';
                                 setBoard(tempBoard);
@@ -1479,27 +1737,319 @@ const Board = () => {
                     }
                     if (x < 7) {
                         if (!board[x + 1][y]) {
-                            tempBoard[x + 1][y] = 'pm';
-                            setBoard(tempBoard);
+                            let hasPieceToCheckIt: boolean = false;
+                            for (let xPos = x + 1; xPos < 7; xPos++) {
+                                if (board[xPos][y].slice(0, 2) === 'bq' || board[xPos][y].slice(0, 2) === 'bb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let xPos = x + 1; xPos > 0; xPos--) {
+                                if (board[xPos][y].slice(0, 2) === 'bq' || board[xPos][y].slice(0, 2) === 'bb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+
+                            for (let yPos = y; yPos > 0; yPos--) {
+                                if (board[x + 1][yPos].slice(0, 2) === 'bq' || board[x + 1][yPos].slice(0, 2) === 'br') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let yPos = y; yPos < 7; yPos++) {
+                                if (board[x + 1][yPos].slice(0, 2) === 'bq' || board[x + 1][yPos].slice(0, 2) === 'br') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let xPos = x, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+
+                            for (let xPos = x + 1, yPos = y; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let xPos = x + 1, yPos = y; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let xPos = x + 1, yPos = y; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let xPos = x + 1, yPos = y; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            if (!hasPieceToCheckIt) {
+                                tempBoard[x + 1][y] = 'pm';
+                                setBoard(tempBoard);
+                            }
                         } else if (board[x + 1][y].slice(0, 1) === 'b') {
                             tempBoard[x + 1][y] = tempBoard[x + 1][y].slice(0, 3) + 'et';
                             setBoard(tempBoard);
                         }
                         if (y > 0) {
                             if (!board[x + 1][y - 1]) {
-                                tempBoard[x + 1][y - 1] = 'pm';
-                                setBoard(tempBoard);
+                                let hasPieceToCheckIt: boolean = false;
+                                for (let xPos = x + 1, yPos = y - 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x + 1, yPos = y - 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x + 1, yPos = y - 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x + 1, yPos = y - 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos > 0; xPos--) {
+                                    if (board[xPos][y - 1].slice(0, 2) === 'bq' || board[xPos][y - 1].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos < 7; xPos++) {
+                                    if (board[xPos][y - 1].slice(0, 2) === 'bq' || board[xPos][y - 1].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y - 1; yPos > 0; yPos--) {
+                                    if (board[x + 1][yPos].slice(0, 2) === 'bq' || board[x + 1][yPos].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y - 1; yPos < 7; yPos++) {
+                                    if (board[x + 1][yPos].slice(0, 2) === 'bq' || board[x + 1][yPos].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                if (!hasPieceToCheckIt) {
+                                    tempBoard[x + 1][y - 1] = 'pm';
+                                    setBoard(tempBoard);
+                                }
                             } else if (board[x + 1][y - 1].slice(0, 1) === 'b') {
                                 tempBoard[x + 1][y - 1] = tempBoard[x + 1][y - 1].slice(0, 3) + 'et';
+                                setBoard(tempBoard);
+                            }
+                            if (!board[x][y - 1]) {
+                                let hasPieceToCheckIt: boolean = false;
+                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                    if (board[x][yPos].slice(0, 2) === 'bq' || board[x][yPos].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y - 1; yPos > 0; yPos--) {
+                                    if (board[x][yPos].slice(0, 2) === 'bq' || board[x][yPos].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y - 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y - 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos > 0; xPos--) {
+                                    if (board[xPos][y - 1].slice(0, 2) === 'bq' || board[xPos][y - 1].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos < 7; xPos++) {
+                                    if (board[xPos][y - 1].slice(0, 2) === 'bq' || board[xPos][y - 1].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y - 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y - 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                if (!hasPieceToCheckIt) {
+                                    tempBoard[x][y - 1] = 'pm';
+                                    setBoard(tempBoard);
+                                }
+                            } else if (board[x][y - 1].slice(0, 1) === 'b') {
+                                tempBoard[x][y - 1] = tempBoard[x][y - 1].slice(0, 3) + 'et';
                                 setBoard(tempBoard);
                             }
                         }
                         if (y < 7) {
                             if (!board[x + 1][y + 1]) {
-                                tempBoard[x + 1][y + 1] = 'pm';
-                                setBoard(tempBoard);
+                                let hasPieceToCheckIt: boolean = false;
+                                for (let xPos = x - 1, yPos = y - 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y - 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x + 1, yPos = y + 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x + 1, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos > 0; xPos--) {
+                                    if (board[xPos][y + 1].slice(0, 2) === 'bq' || board[xPos][y + 1].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos < 7; xPos++) {
+                                    if (board[xPos][y + 1].slice(0, 2) === 'bq' || board[xPos][y + 1].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y + 1; yPos > 0; yPos--) {
+                                    if (board[x + 1][yPos].slice(0, 2) === 'bq' || board[x + 1][yPos].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                    if (board[x + 1][yPos].slice(0, 2) === 'bq' || board[x + 1][yPos].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                if (!hasPieceToCheckIt) {
+                                    tempBoard[x + 1][y + 1] = 'pm';
+                                    setBoard(tempBoard);
+                                }
                             } else if (board[x + 1][y + 1].slice(0, 1) === 'b') {
                                 tempBoard[x + 1][y + 1] = tempBoard[x + 1][y + 1].slice(0, 3) + 'et';
+                                setBoard(tempBoard);
+                            }
+                            if (!board[x][y + 1]) {
+                                let hasPieceToCheckIt: boolean = false;
+                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                    if (board[x][yPos].slice(0, 2) === 'bq' || board[x][yPos].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y - 1; yPos > 0; yPos--) {
+                                    if (board[x][yPos].slice(0, 2) === 'bq' || board[x][yPos].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+
+                                for (let xPos = x; xPos > 0; xPos--) {
+                                    if (board[xPos][y + 1].slice(0, 2) === 'bq' || board[xPos][y + 1].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos < 7; xPos++) {
+                                    if (board[xPos][y + 1].slice(0, 2) === 'bq' || board[xPos][y + 1].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+
+                                for (let yPos = y - 1; yPos > 0; yPos--) {
+                                    if (board[x][yPos].slice(0, 2) === 'bq' || board[x][yPos].slice(0, 2) === 'br') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+
+                                for (let xPos = x - 1, yPos = y; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y + 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'bq' || tempBoard[xPos][yPos].slice(0, 2) === 'bb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                if (!hasPieceToCheckIt) {
+                                    tempBoard[x][y + 1] = 'pm';
+                                    setBoard(tempBoard);
+                                }
+                            } else if (board[x][y + 1].slice(0, 1) === 'b') {
+                                tempBoard[x][y + 1] = tempBoard[x][y + 1].slice(0, 3) + 'et';
                                 setBoard(tempBoard);
                             }
                         }
@@ -1528,7 +2078,6 @@ const Board = () => {
                     }
                     break;
                 case 'br':
-                    console.log(`Piece ${tempBoard[selectedPiece[0]][selectedPiece[1] - 1]} at position: [${selectedPiece[0]}, ${selectedPiece[1]}]`);
                     if (selectedPiece[0] > 0) {
                         let x = selectedPiece[0] - 1, y = selectedPiece[1];
                         while (!board[x][y] && x > 0) {
@@ -1879,6 +2428,7 @@ const Board = () => {
                     break;
                 case 'bk':
                     x = selectedPiece[0], y = selectedPiece[1];
+                    // Rook checks
                     if (checkCastleBlack[0] === false && tempBoard[x][7].slice(0, 2) === 'wr' && checkCastleBlack[2] === false &&
                         !tempBoard[selectedPiece![0]][selectedPiece![1] + 1] && !tempBoard[selectedPiece![0]][selectedPiece![1] + 2]) {
                         tempBoard[x][y + 2] = 'pm';
@@ -1890,74 +2440,639 @@ const Board = () => {
                         setBoard(tempBoard);
                     }
 
-                    if (y > 0) {
-                        if (!tempBoard[x][y - 1]) {
-                            tempBoard[x][y - 1] = 'pm';
-                            setBoard(tempBoard);
-                        } else if (tempBoard[x][y - 1].slice(0, 1) === 'w') {
-                            tempBoard[x][y - 1] = tempBoard[x][y - 1].slice(0, 2) + 'et';
-                            setBoard(tempBoard);
-                        }
-                    }
-                    if (y < 7) {
-                        if (!tempBoard[x][y + 1]) {
-                            tempBoard[x][y + 1] = 'pm';
-                            setBoard(tempBoard);
-                        } else if (tempBoard[x][y + 1].slice(0, 1) === 'w') {
-                            tempBoard[x][y + 1] = tempBoard[x][y + 1].slice(0, 2) + 'et';
-                            setBoard(tempBoard);
-                        }
-                    }
-
-                    if (x < 7) {
-                        if (y > 0) {
-                            if (!tempBoard[x + 1][y]) {
-                                tempBoard[x + 1][y] = 'pm';
-                                setBoard(tempBoard);
-                            } else if (tempBoard[x + 1][y].slice(0, 1) === 'w') {
-                                tempBoard[x + 1][y] = tempBoard[x + 1][y].slice(0, 2) + 'et';
-                                setBoard(tempBoard);
-                            }
-                            if (!tempBoard[x + 1][y - 1]) {
-                                tempBoard[x + 1][y - 1] = 'pm';
-                                setBoard(tempBoard);
-                            } else if (tempBoard[x + 1][y - 1].slice(0, 1) === 'w') {
-                                tempBoard[x + 1][y - 1] = tempBoard[x + 1][y - 1].slice(0, 2) + 'et';
-                                setBoard(tempBoard);
-                            }
-                            if (!tempBoard[x + 1][y + 1]) {
-                                tempBoard[x + 1][y + 1] = 'pm';
-                                setBoard(tempBoard);
-                            } else if (tempBoard[x + 1][y + 1].slice(0, 1) === 'w') {
-                                tempBoard[x + 1][y + 1] = tempBoard[x + 1][y + 1].slice(0, 2) + 'et';
-                                setBoard(tempBoard);
-                            }
-                        }
-                    }
+                    // Possible move checks
                     if (x > 0) {
-                        if (y < 7) {
+                        if (!board[x - 1][y]) {
+                            let hasPieceToCheckIt: boolean = false;
+                            for (let xPos = x - 1; xPos > 0; xPos--) {
+                                if (board[xPos][y].slice(0, 2) === 'wq' || board[xPos][y].slice(0, 2) === 'wb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let xPos = x - 1; xPos < 7; xPos++) {
+                                if (board[xPos][y].slice(0, 2) === 'wq' || board[xPos][y].slice(0, 2) === 'wb') {
+                                    console.log(board[xPos][y])
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let yPos = y; yPos > 0; yPos--) {
+                                if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let yPos = y; yPos < 7; yPos++) {
+                                if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x - 1][yPos].slice(0, 2) === 'wb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
 
-                            if (!tempBoard[x - 1][y]) {
+                            for (let xPos = x - 1, yPos = y; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let xPos = x - 1, yPos = y; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+
+                            for (let xPos = x - 1, yPos = y; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let xPos = x - 1, yPos = y; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            if (!hasPieceToCheckIt) {
                                 tempBoard[x - 1][y] = 'pm';
                                 setBoard(tempBoard);
-                            } else if (tempBoard[x - 1][y].slice(0, 1) === 'w') {
-                                tempBoard[x - 1][y] = tempBoard[x - 1][y].slice(0, 2) + 'et';
+                            }
+                        } else if (board[x - 1][y].slice(0, 1) === 'w') {
+                            tempBoard[x - 1][y] = tempBoard[x - 1][y].slice(0, 3) + 'et';
+                            setBoard(tempBoard);
+                        }
+
+                        if (y < 7) {
+                            if (!board[x - 1][y + 1]) {
+                                let hasPieceToCheckIt: boolean = false;
+                                for (let xPos = x - 1, yPos = y + 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y + 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y + 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y + 1; yPos > 0; yPos--) {
+                                    if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                    if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x - 1][yPos].slice(0, 2) === 'wb') {
+                                        console.log(board[x][yPos])
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos > 0; xPos--) {
+                                    if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos < 7; xPos++) {
+                                    if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+
+                                if (!hasPieceToCheckIt) {
+                                    tempBoard[x - 1][y + 1] = 'pm';
+                                    setBoard(tempBoard);
+                                }
+                            } else if (board[x - 1][y + 1].slice(0, 1) === 'w') {
+                                tempBoard[x - 1][y + 1] = tempBoard[x - 1][y + 1].slice(0, 3) + 'et';
                                 setBoard(tempBoard);
                             }
 
-                            if (!tempBoard[x - 1][y - 1]) {
-                                tempBoard[x - 1][y - 1] = 'pm';
+                            if (!board[x][y + 1]) {
+                                let hasPieceToCheckIt: boolean = false;
+                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                    if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y - 1; yPos > 0; yPos--) {
+                                    if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+
+                                for (let xPos = x; xPos > 0; xPos--) {
+                                    if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos < 7; xPos++) {
+                                    if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+
+                                for (let xPos = x, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+
+                                for (let xPos = x, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y + 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                if (!hasPieceToCheckIt) {
+                                    tempBoard[x][y + 1] = 'pm';
+                                    setBoard(tempBoard);
+                                }
+                            } else if (board[x][y + 1].slice(0, 1) === 'w') {
+                                tempBoard[x][y + 1] = tempBoard[x][y + 1].slice(0, 3) + 'et';
                                 setBoard(tempBoard);
-                            } else if (tempBoard[x - 1][y - 1].slice(0, 1) === 'w') {
-                                tempBoard[x - 1][y - 1] = tempBoard[x - 1][y - 1].slice(0, 2) + 'et';
+                            }
+                        }
+
+                        if (y > 0) {
+                            if (!board[x - 1][y - 1]) {
+                                let hasPieceToCheckIt: boolean = false;
+                                for (let xPos = x - 1, yPos = y - 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y - 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y - 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y - 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y + 1; yPos > 0; yPos--) {
+                                    if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                    if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x - 1][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos > 0; xPos--) {
+                                    if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos < 7; xPos++) {
+                                    if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                if (!hasPieceToCheckIt) {
+                                    tempBoard[x - 1][y - 1] = 'pm';
+                                    setBoard(tempBoard);
+                                }
+                            } else if (board[x - 1][y - 1].slice(0, 1) === 'w') {
+                                tempBoard[x - 1][y - 1] = tempBoard[x - 1][y - 1].slice(0, 3) + 'et';
                                 setBoard(tempBoard);
                             }
 
-                            if (!tempBoard[x - 1][y + 1]) {
-                                tempBoard[x - 1][y + 1] = 'pm';
+                            if (!board[x][y - 1]) {
+                                let hasPieceToCheckIt: boolean = false;
+                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                    if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y - 1; yPos > 0; yPos--) {
+                                    if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y - 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y - 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos > 0; xPos--) {
+                                    if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos < 7; xPos++) {
+                                    if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+
+
+                                for (let xPos = x, yPos = y - 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y - 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+
+                                if (!hasPieceToCheckIt) {
+                                    tempBoard[x][y - 1] = 'pm';
+                                    setBoard(tempBoard);
+                                }
+                            } else if (board[x][y - 1].slice(0, 1) === 'w') {
+                                tempBoard[x][y - 1] = tempBoard[x][y - 1].slice(0, 3) + 'et';
                                 setBoard(tempBoard);
-                            } else if (tempBoard[x - 1][y + 1].slice(0, 1) === 'w') {
-                                tempBoard[x - 1][y + 1] = tempBoard[x - 1][y + 1].slice(0, 2) + 'et';
+                            }
+                        }
+                    }
+                    if (x < 7) {
+                        if (!board[x + 1][y]) {
+                            let hasPieceToCheckIt: boolean = false;
+                            for (let xPos = x + 1; xPos < 7; xPos++) {
+                                if (board[xPos][y].slice(0, 2) === 'wq' || board[xPos][y].slice(0, 2) === 'wb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let xPos = x + 1; xPos > 0; xPos--) {
+                                if (board[xPos][y].slice(0, 2) === 'wq' || board[xPos][y].slice(0, 2) === 'wb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+
+                            for (let yPos = y; yPos > 0; yPos--) {
+                                if (board[x + 1][yPos].slice(0, 2) === 'wq' || board[x + 1][yPos].slice(0, 2) === 'wr') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let yPos = y; yPos < 7; yPos++) {
+                                if (board[x + 1][yPos].slice(0, 2) === 'wq' || board[x + 1][yPos].slice(0, 2) === 'wr') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let xPos = x, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+
+                            for (let xPos = x + 1, yPos = y; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let xPos = x + 1, yPos = y; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let xPos = x + 1, yPos = y; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            for (let xPos = x + 1, yPos = y; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                }
+                            }
+                            if (!hasPieceToCheckIt) {
+                                tempBoard[x + 1][y] = 'pm';
+                                setBoard(tempBoard);
+                            }
+                        } else if (board[x + 1][y].slice(0, 1) === 'w') {
+                            tempBoard[x + 1][y] = tempBoard[x + 1][y].slice(0, 3) + 'et';
+                            setBoard(tempBoard);
+                        }
+                        if (y > 0) {
+                            if (!board[x + 1][y - 1]) {
+                                let hasPieceToCheckIt: boolean = false;
+                                for (let xPos = x + 1, yPos = y - 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x + 1, yPos = y - 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x + 1, yPos = y - 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x + 1, yPos = y - 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos > 0; xPos--) {
+                                    if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos < 7; xPos++) {
+                                    if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y - 1; yPos > 0; yPos--) {
+                                    if (board[x + 1][yPos].slice(0, 2) === 'wq' || board[x + 1][yPos].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y - 1; yPos < 7; yPos++) {
+                                    if (board[x + 1][yPos].slice(0, 2) === 'wq' || board[x + 1][yPos].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                if (!hasPieceToCheckIt) {
+                                    tempBoard[x + 1][y - 1] = 'pm';
+                                    setBoard(tempBoard);
+                                }
+                            } else if (board[x + 1][y - 1].slice(0, 1) === 'w') {
+                                tempBoard[x + 1][y - 1] = tempBoard[x + 1][y - 1].slice(0, 3) + 'et';
+                                setBoard(tempBoard);
+                            }
+                            if (!board[x][y - 1]) {
+                                let hasPieceToCheckIt: boolean = false;
+                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                    if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y - 1; yPos > 0; yPos--) {
+                                    if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y - 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y - 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos > 0; xPos--) {
+                                    if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos < 7; xPos++) {
+                                    if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y - 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y - 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                if (!hasPieceToCheckIt) {
+                                    tempBoard[x][y - 1] = 'pm';
+                                    setBoard(tempBoard);
+                                }
+                            } else if (board[x][y - 1].slice(0, 1) === 'w') {
+                                tempBoard[x][y - 1] = tempBoard[x][y - 1].slice(0, 3) + 'et';
+                                setBoard(tempBoard);
+                            }
+                        }
+                        if (y < 7) {
+                            if (!board[x + 1][y + 1]) {
+                                let hasPieceToCheckIt: boolean = false;
+                                for (let xPos = x - 1, yPos = y - 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y - 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x + 1, yPos = y + 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x + 1, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos > 0; xPos--) {
+                                    if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos < 7; xPos++) {
+                                    if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y + 1; yPos > 0; yPos--) {
+                                    if (board[x + 1][yPos].slice(0, 2) === 'wq' || board[x + 1][yPos].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                    if (board[x + 1][yPos].slice(0, 2) === 'wq' || board[x + 1][yPos].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                if (!hasPieceToCheckIt) {
+                                    tempBoard[x + 1][y + 1] = 'pm';
+                                    setBoard(tempBoard);
+                                }
+                            } else if (board[x + 1][y + 1].slice(0, 1) === 'w') {
+                                tempBoard[x + 1][y + 1] = tempBoard[x + 1][y + 1].slice(0, 3) + 'et';
+                                setBoard(tempBoard);
+                            }
+                            if (!board[x][y + 1]) {
+                                let hasPieceToCheckIt: boolean = false;
+                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                    if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let yPos = y - 1; yPos > 0; yPos--) {
+                                    if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+
+                                for (let xPos = x; xPos > 0; xPos--) {
+                                    if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x; xPos < 7; xPos++) {
+                                    if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+
+                                for (let yPos = y - 1; yPos > 0; yPos--) {
+                                    if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+
+                                for (let xPos = x - 1, yPos = y; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1, yPos = y; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x, yPos = y + 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    }
+                                }
+                                if (!hasPieceToCheckIt) {
+                                    tempBoard[x][y + 1] = 'pm';
+                                    setBoard(tempBoard);
+                                }
+                            } else if (board[x][y + 1].slice(0, 1) === 'w') {
+                                tempBoard[x][y + 1] = tempBoard[x][y + 1].slice(0, 3) + 'et';
                                 setBoard(tempBoard);
                             }
                         }
@@ -1989,21 +3104,21 @@ const Board = () => {
     }, [board]);
 
     // Reset game after 50 moves.
-    useEffect(() => {
-        if (totalMoves == 50) {
-            setTimeout(() => {
-                setShowMessage(true);
-                setGameIsFinished(true);
-                setMessage("Total moves amount reached. Resetting the game...")
-            }, 15);
-            setTimeout(() => {
-                setBoard(intialBoardState);
-                setTotalMoves(0);
-                setGameIsFinished(false);
-                setIsWhiteTurn(true);
-            }, 3000)
-        }
-    }, [totalMoves])
+    // useEffect(() => {
+    //     if (totalMoves == 50) {
+    //         setTimeout(() => {
+    //             setShowMessage(true);
+    //             setGameIsFinished(true);
+    //             setMessage("Total moves amount reached. Resetting the game...")
+    //         }, 15);
+    //         setTimeout(() => {
+    //             setBoard(intialBoardState);
+    //             setTotalMoves(0);
+    //             setGameIsFinished(false);
+    //             setIsWhiteTurn(true);
+    //         }, 3000)
+    //     }
+    // }, [totalMoves])
 
     // Updates the board when you choose a piece to promote
     const udpateBord = () => {
@@ -2032,13 +3147,13 @@ const Board = () => {
                 }
             })
         });
-        if (itHasCheck) {
-            if (board[fieldPosition[0]][fieldPosition[1]].slice(0, 1) === 'w') {
-                setChecked(prev => ['bk', 1]);
-            } else if (board[fieldPosition[0]][fieldPosition[1]].slice(0, 1) === 'b') {
-                setChecked(prev => ['wk', 1]);
-            }
-        }
+        // if (itHasCheck) {
+        //     if (board[fieldPosition[0]][fieldPosition[1]].slice(0, 1) === 'w') {
+        //         setChecked(prev => ['bk', 1]);
+        //     } else if (board[fieldPosition[0]][fieldPosition[1]].slice(0, 1) === 'b') {
+        //         setChecked(prev => ['wk', 1]);
+        //     }
+        // }
     }, []);
 
     return (
