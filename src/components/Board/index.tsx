@@ -19,8 +19,8 @@ const Board = () => {
         ["", "", "", "", "", "", "", ""],
         ["", "", "bk", "", "bk", "", "", ""],
         ["", "", "", "", "", "", "", ""],
-        ["", "", "", "wq", "", "", "", ""],
-        ["", "", "", "", "", "", "", ""],
+        ["", "", "", "wq", "bp", "", "", ""],
+        ["", "", "", "bp", "", "", "", ""],
         ["", "", "bk", "", "bk", "", "", ""],
         ["", "", "", "", "", "", "", ""]
     ];
@@ -361,7 +361,6 @@ const Board = () => {
     const movePiece = (row: number, column: number) => {
         // Getting the selected piece 
         const pieceMoving = board[selectedPiece![0]][selectedPiece![1]];
-
         // Cheking for castle
         if (selectedPiece![0] === 7 && selectedPiece![1] === 4 && pieceMoving === 'wk') {
             let whiteCastleCheck = checkCastleWhite;
@@ -387,6 +386,7 @@ const Board = () => {
                 return;
             }
         }));
+        console.log(hasCheck);
         if (hasCheck && pieceMoving.slice(1, 2) === 'k') {
             tempBoard[selectedPiece![0]][selectedPiece![1]] = pieceMoving.slice(0, 2);
             tempBoard[row][column] = '';
@@ -414,6 +414,7 @@ const Board = () => {
 
     const checkCheck = (pieceMoving: string, row: number, column: number) => {
         let tempBoard = board;
+        let hasCheck: boolean = false;
         switch (pieceMoving) {
             case 'wp':
                 if (board[row - 1][column + 1] === 'bk') {
@@ -442,57 +443,68 @@ const Board = () => {
             case 'wr':
                 if (row < 7) {
                     for (let x = row + 1; x <= 7; x++) {
-                        const field = board[x][column];
+                        const field = board[x][column].slice(0, 2);
                         if (field) {
-
+                            if (field !== 'bk') {
+                                hasCheck = false;
+                                break;
+                            }
                             if (field === 'bk') {
                                 tempBoard[x][column] = tempBoard[x][column] + 'dg';
                                 setBoard(tempBoard);
-                                return true;
-                            } else {
-                                return;
+                                hasCheck = true;
+                                break;
                             }
                         }
                     }
                 }
                 if (row > 0) {
                     for (let x = row - 1; x >= 0; x--) {
-                        const field = board[x][column];
+                        const field = board[x][column].slice(0, 2);
                         if (field) {
+                            if (field !== 'bk') {
+                                hasCheck = false;
+                                break;
+                            }
                             if (field === 'bk') {
                                 tempBoard[x][column] = tempBoard[x][column] + 'dg';
                                 setBoard(tempBoard);
-                                return true;
-                            } else {
-                                return;
+                                hasCheck = true;
+                                break;
                             }
                         }
                     }
                 }
                 if (column > 0) {
                     for (let y = column - 1; y >= 0; y--) {
-                        const field = board[row][y];
+                        const field = board[row][y].slice(0, 2);
                         if (field) {
+                            if (field !== 'bk') {
+                                hasCheck = false;
+                                break;
+                            }
                             if (field === 'bk') {
                                 tempBoard[row][y] = tempBoard[row][y] + 'dg';
                                 setBoard(tempBoard);
-                                return true;
-                            } else {
-                                return;
+                                hasCheck = true;
+                                break;
                             }
                         }
                     }
                 }
                 if (column < 7) {
                     for (let y = column + 1; y <= 7; y++) {
-                        const field = board[row][y];
+                        const field = board[row][y].slice(0, 2);
                         if (field) {
+                            if (field !== 'bk') {
+                                hasCheck = false;
+                                break;
+                            }
                             if (field === 'bk') {
                                 tempBoard[row][y] = tempBoard[row][y] + 'dg';
                                 setBoard(tempBoard);
-                                return true;
-                            } else {
-                                return;
+                                hasCheck = true;
+                                break;
                             }
                         }
                     }
@@ -501,58 +513,69 @@ const Board = () => {
             case 'br':
                 if (row < 7) {
                     for (let x = row + 1; x <= 7; x++) {
-                        const field = board[x][column];
+                        const field = board[x][column].slice(0, 2);
                         if (field) {
+                            if (field !== 'wk') {
+                                hasCheck = false;
+                                break;
+                            }
                             if (field === 'wk') {
                                 tempBoard[x][column] = tempBoard[x][column] + 'dg';
                                 setBoard(tempBoard);
-                                return true;
-                            } else {
-                                return;
+                                hasCheck = true;
+                                break;
                             }
                         }
                     }
                 }
                 if (row > 0) {
                     for (let x = row - 1; x >= 0; x--) {
-                        const field = board[x][column];
+                        const field = board[x][column].slice(0, 2);
                         if (field) {
+                            if (field !== 'wk') {
+                                hasCheck = false;
+                                break;
+                            }
                             if (field === 'wk') {
                                 tempBoard[x][column] = tempBoard[x][column] + 'dg';
                                 setBoard(tempBoard);
-                                return true;
-                            } else {
-                                return;
+                                hasCheck = true;
+                                break;
                             }
                         }
                     }
                 }
                 if (column > 0) {
                     for (let y = column - 1; y >= 0; y--) {
-                        const field = board[row][y];
+                        const field = board[row][y].slice(0, 2);
                         if (field) {
+                            if (field !== 'wk') {
+                                hasCheck = false;
+                                break;
+                            }
                             if (field === 'wk') {
 
                                 tempBoard[row][y] = tempBoard[row][y] + 'dg';
                                 setBoard(tempBoard);
-                                return true;
-                            } else {
-                                return;
+                                hasCheck = true;
+                                break;
                             }
                         }
                     }
                 }
                 if (column < 7) {
                     for (let y = column + 1; y <= 7; y++) {
-                        const field = board[row][y];
+                        const field = board[row][y].slice(0, 2);
                         if (field) {
+                            if (field !== 'wk') {
+                                hasCheck = false;
+                                break;
+                            }
                             if (field === 'wk') {
-
                                 tempBoard[row][y] = tempBoard[row][y] + 'dg';
                                 setBoard(tempBoard);
-                                return true;
-                            } else {
-                                return;
+                                hasCheck = true;
+                                break;
                             }
                         }
                     }
@@ -562,28 +585,34 @@ const Board = () => {
                 if (row < 7) {
                     if (column < 7) {
                         for (let x = row + 1, y = column + 1; x <= 7 && y <= 7; x++, y++) {
-                            const field = board[x][y];
+                            const field = board[x][y].slice(0, 2);
                             if (field) {
+                                if (field !== 'bk') {
+                                    hasCheck = false;
+                                    break;
+                                }
                                 if (field === 'bk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return true;
-                                } else {
-                                    return;
+                                    hasCheck = true;
+                                    break;
                                 }
                             }
                         }
                     }
                     if (column > 0) {
                         for (let x = row + 1, y = column - 1; x <= 7 && y >= 0; x++, y--) {
-                            const field = board[x][y];
+                            const field = board[x][y].slice(0, 2);
                             if (field) {
+                                if (field !== 'bk') {
+                                    hasCheck = false;
+                                    break;
+                                }
                                 if (field === 'bk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return true;
-                                } else {
-                                    return;
+                                    hasCheck = true;
+                                    break;
                                 }
                             }
                         }
@@ -592,28 +621,34 @@ const Board = () => {
                 if (row > 0) {
                     if (column < 7) {
                         for (let x = row - 1, y = column + 1; x >= 0 && y <= 7; x--, y++) {
-                            const field = board[x][y];
+                            const field = board[x][y].slice(0, 2);
                             if (field) {
+                                if (field !== 'bk') {
+                                    hasCheck = false;
+                                    break;
+                                }
                                 if (field === 'bk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return true;
-                                } else {
-                                    return;
+                                    hasCheck = true;
+                                    break;
                                 }
                             }
                         }
                     }
                     if (column > 0) {
                         for (let x = row - 1, y = column - 1; x >= 0 && y >= 0; x--, y--) {
-                            const field = board[x][y];
+                            const field = board[x][y].slice(0, 2);
                             if (field) {
+                                if (field !== 'bk') {
+                                    hasCheck = false;
+                                    break;
+                                }
                                 if (field === 'bk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return true;
-                                } else {
-                                    return;
+                                    hasCheck = true;
+                                    break;
                                 }
                             }
                         }
@@ -624,28 +659,34 @@ const Board = () => {
                 if (row < 7) {
                     if (column < 7) {
                         for (let x = row + 1, y = column + 1; x <= 7 && y <= 7; x++, y++) {
-                            const field = board[x][y];
+                            const field = board[x][y].slice(0, 2);
                             if (field) {
+                                if (field !== 'wk') {
+                                    hasCheck = false;
+                                    break;
+                                }
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return true;
-                                } else {
-                                    return;
+                                    hasCheck = true;
+                                    break;
                                 }
                             }
                         }
                     }
                     if (column > 0) {
                         for (let x = row + 1, y = column - 1; x <= 7 && y >= 0; x++, y--) {
-                            const field = board[x][y];
+                            const field = board[x][y].slice(0, 2);
                             if (field) {
+                                if (field !== 'wk') {
+                                    hasCheck = false;
+                                    break;
+                                }
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return true;
-                                } else {
-                                    return;
+                                    hasCheck = true;
+                                    break;
                                 }
                             }
                         }
@@ -654,28 +695,34 @@ const Board = () => {
                 if (row > 0) {
                     if (column < 7) {
                         for (let x = row - 1, y = column + 1; x >= 0 && y <= 7; x--, y++) {
-                            const field = board[x][y];
+                            const field = board[x][y].slice(0, 2);
                             if (field) {
+                                if (field !== 'wk') {
+                                    hasCheck = false;
+                                    break;
+                                }
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return true;
-                                } else {
-                                    return;
+                                    hasCheck = true;
+                                    break;
                                 }
                             }
                         }
                     }
                     if (column > 0) {
                         for (let x = row - 1, y = column - 1; x >= 0 && y >= 0; x--, y--) {
-                            const field = board[x][y];
+                            const field = board[x][y].slice(0, 2);
                             if (field) {
+                                if (field !== 'wk') {
+                                    hasCheck = false;
+                                    break;
+                                }
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return true;
-                                } else {
-                                    return;
+                                    hasCheck = true;
+                                    break;
                                 }
                             }
                         }
@@ -688,7 +735,8 @@ const Board = () => {
                         if (board[row - 2][column + 1] === 'bk') {
                             tempBoard[row - 2][column + 1] = tempBoard[row - 2][column + 1] + 'dg';
                             setBoard(tempBoard);
-                            return true;
+                            hasCheck = true;
+                            break;
                         }
                     }
 
@@ -697,7 +745,8 @@ const Board = () => {
                         if (board[row - 1][column + 2] === 'bk') {
                             tempBoard[row - 1][column + 2] = tempBoard[row - 1][column + 2] + 'dg';
                             setBoard(tempBoard);
-                            return true;
+                            hasCheck = true;
+                            break;
                         }
                     }
                 }
@@ -707,7 +756,8 @@ const Board = () => {
                         if (board[row + 2][column - 1] === 'bk') {
                             tempBoard[row + 2][column - 1] = tempBoard[row + 2][column - 1] + 'dg';
                             setBoard(tempBoard);
-                            return true;
+                            hasCheck = true;
+                            break;
                         }
                     }
 
@@ -715,7 +765,8 @@ const Board = () => {
                         if (board[row + 1][column - 2] === 'bk') {
                             tempBoard[row + 1][column - 2] = tempBoard[row + 1][column - 2] + 'dg';
                             setBoard(tempBoard);
-                            return true;
+                            hasCheck = true;
+                            break;
                         }
                     }
                 }
@@ -725,7 +776,8 @@ const Board = () => {
                         if (board[row + 2][column + 1] === 'bk') {
                             tempBoard[row + 2][column + 1] = tempBoard[row + 2][column + 1] + 'dg';
                             setBoard(tempBoard);
-                            return true;
+                            hasCheck = true;
+                            break;
                         }
                     }
 
@@ -733,7 +785,8 @@ const Board = () => {
                         if (board[row + 1][column + 2] === 'bk') {
                             tempBoard[row + 1][column + 2] = tempBoard[row + 1][column + 2] + 'dg';
                             setBoard(tempBoard);
-                            return true;
+                            hasCheck = true;
+                            break;
                         }
                     }
                 }
@@ -743,7 +796,8 @@ const Board = () => {
                         if (board[row - 2][column - 1] === 'bk') {
                             tempBoard[row - 2][column - 1] = tempBoard[row - 2][column - 1] + 'dg';
                             setBoard(tempBoard);
-                            return true;
+                            hasCheck = true;
+                            break;
                         }
                     }
 
@@ -751,7 +805,8 @@ const Board = () => {
                         if (board[row - 1][column - 2] === 'bk') {
                             tempBoard[row - 1][column - 2] = tempBoard[row - 1][column - 2] + 'dg';
                             setBoard(tempBoard);
-                            return true;
+                            hasCheck = true;
+                            break;
                         }
                     }
                 }
@@ -760,14 +815,16 @@ const Board = () => {
                 if (row > 0 && column < 7) {
                     if (row > 1) {
                         if (board[row - 2][column + 1] === 'wk') {
-                            return true;
+                            hasCheck = true;
+                            break;
                         }
                     }
 
                     if (column < 6) {
                         console.log(board[row - 1][column + 2]);
                         if (board[row - 1][column + 2] === 'wk') {
-                            return true;
+                            hasCheck = true;
+                            break;
                         }
                     }
                 }
@@ -775,13 +832,15 @@ const Board = () => {
                 if (row < 7 && column > 0) {
                     if (row < 6) {
                         if (board[row + 2][column - 1] === 'wk') {
-                            return true;
+                            hasCheck = true;
+                            break;
                         }
                     }
 
                     if (column > 1) {
                         if (board[row + 1][column - 2] === 'wk') {
-                            return true;
+                            hasCheck = true;
+                            break;
                         }
                     }
                 }
@@ -789,13 +848,15 @@ const Board = () => {
                 if (row < 7 && column < 7) {
                     if (row < 6) {
                         if (board[row + 2][column + 1] === 'wk') {
-                            return true;
+                            hasCheck = true;
+                            break;
                         }
                     }
 
                     if (column < 6) {
                         if (board[row + 1][column + 2] === 'wk') {
-                            return true;
+                            hasCheck = true;
+                            break;
                         }
                     }
                 }
@@ -803,13 +864,15 @@ const Board = () => {
                 if (row > 0 && column < 7) {
                     if (row > 1) {
                         if (board[row - 2][column - 1] === 'wk') {
-                            return true;
+                            hasCheck = true;
+                            break;
                         }
                     }
 
                     if (column > 1) {
                         if (board[row - 1][column - 2] === 'wk') {
-                            return true;
+                            hasCheck = true;
+                            break;
                         }
                     }
                 }
@@ -819,10 +882,15 @@ const Board = () => {
                     for (let x = row + 1; x <= 7; x++) {
                         const field = board[x][column].slice(0, 2);
                         if (field) {
+                            if (field !== 'bk') {
+                                hasCheck = false;
+                                break;
+                            }
                             if (field === 'bk') {
                                 tempBoard[x][column] = field + 'dg';
                                 setBoard(tempBoard);
-                                return true;
+                                hasCheck = true;
+                                break;
                             }
                         }
                     }
@@ -830,10 +898,15 @@ const Board = () => {
                         for (let x = row + 1, y = column + 1; x <= 7 && y <= 7; x++, y++) {
                             const field = board[x][y].slice(0, 2);
                             if (field) {
+                                if (field !== 'bk') {
+                                    hasCheck = false;
+                                    break;
+                                }
                                 if (field === 'bk') {
                                     tempBoard[x][y] = field + 'dg';
                                     setBoard(tempBoard);
-                                    return true;
+                                    hasCheck = true;
+                                    break;
                                 }
                             }
                         }
@@ -842,10 +915,15 @@ const Board = () => {
                         for (let x = row + 1, y = column - 1; x <= 7 && y >= 0; x++, y--) {
                             const field = board[x][y].slice(0, 2);
                             if (field) {
+                                if (field !== 'bk') {
+                                    hasCheck = false;
+                                    break;
+                                }
                                 if (field === 'bk') {
                                     tempBoard[x][y] = field + 'dg';
                                     setBoard(tempBoard);
-                                    return true;
+                                    hasCheck = true;
+                                    break;
                                 }
                             }
                         }
@@ -855,11 +933,15 @@ const Board = () => {
                     for (let x = row - 1; x >= 0; x--) {
                         const field = board[x][column].slice(0, 2);
                         if (field) {
-                            if (field.slice(1, 2) !== 'k') return false;
+                            if (field !== 'bk') {
+                                hasCheck = false;
+                                break;
+                            }
                             if (field === 'bk') {
                                 tempBoard[x][column] = field + 'dg';
                                 setBoard(tempBoard);
-                                return true;
+                                hasCheck = true;
+                                break;
                             }
                         }
                     }
@@ -867,10 +949,15 @@ const Board = () => {
                         for (let x = row - 1, y = column + 1; x >= 0 && y <= 7; x--, y++) {
                             const field = board[x][y].slice(0, 2);
                             if (field) {
+                                if (field !== 'bk') {
+                                    hasCheck = false;
+                                    break;
+                                }
                                 if (field === 'bk') {
                                     tempBoard[x][y] = field + 'dg';
                                     setBoard(tempBoard);
-                                    return true;
+                                    hasCheck = true;
+                                    break;
                                 }
                             }
                         }
@@ -879,10 +966,15 @@ const Board = () => {
                         for (let x = row - 1, y = column - 1; x >= 0 && y >= 0; x--, y--) {
                             const field = board[x][y].slice(0, 2);
                             if (field) {
+                                if (field !== 'bk') {
+                                    hasCheck = false;
+                                    break;
+                                }
                                 if (field === 'bk') {
                                     tempBoard[x][y] = field + 'dg';
                                     setBoard(tempBoard);
-                                    return true;
+                                    hasCheck = true;
+                                    break;
                                 }
                             }
                         }
@@ -892,10 +984,15 @@ const Board = () => {
                     for (let y = column - 1; y >= 0; y--) {
                         const field = board[row][y].slice(0, 2);
                         if (field) {
+                            if (field !== 'bk') {
+                                hasCheck = false;
+                                break;
+                            }
                             if (field === 'bk') {
                                 tempBoard[row][y] = field + 'dg';
                                 setBoard(tempBoard);
-                                return true;
+                                hasCheck = true;
+                                break;
                             }
                         }
                     }
@@ -904,10 +1001,15 @@ const Board = () => {
                     for (let y = column + 1; y <= 7; y++) {
                         const field = board[row][y].slice(0, 2);
                         if (field) {
+                            if (field !== 'bk') {
+                                hasCheck = false;
+                                break;
+                            }
                             if (field === 'bk') {
                                 tempBoard[row][y] = field + 'dg';
                                 setBoard(tempBoard);
-                                return true;
+                                hasCheck = true;
+                                break;
                             }
                         }
                     }
@@ -918,10 +1020,15 @@ const Board = () => {
                     for (let x = row + 1; x <= 7; x++) {
                         const field = tempBoard[x][column].slice(0, 2);
                         if (field) {
+                            if (field !== 'wk') {
+                                hasCheck = false;
+                                break;
+                            }
                             if (field === 'wk') {
                                 tempBoard[x][column] = tempBoard[x][column] + 'dg';
                                 setBoard(tempBoard);
-                                return true;
+                                hasCheck = true;
+                                break;
                             }
                         }
                     }
@@ -929,10 +1036,15 @@ const Board = () => {
                         for (let x = row + 1, y = column + 1; x <= 7 && y <= 7; x++, y++) {
                             const field = board[x][y].slice(0, 2);
                             if (field) {
+                                if (field !== 'wk') {
+                                    hasCheck = false;
+                                    break;
+                                }
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return true;
+                                    hasCheck = true;
+                                    break;
                                 }
                             }
                         }
@@ -941,10 +1053,15 @@ const Board = () => {
                         for (let x = row + 1, y = column - 1; x <= 7 && y >= 0; x++, y--) {
                             const field = board[x][y].slice(0, 2);
                             if (field) {
+                                if (field !== 'wk') {
+                                    hasCheck = false;
+                                    break;
+                                }
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return true;
+                                    hasCheck = true;
+                                    break;
                                 }
                             }
                         }
@@ -954,10 +1071,15 @@ const Board = () => {
                     for (let x = row - 1; x >= 0; x--) {
                         const field = board[x][column].slice(0, 2);
                         if (field) {
+                            if (field !== 'wk') {
+                                hasCheck = false;
+                                break;
+                            }
                             if (field === 'wk') {
                                 tempBoard[x][column] = tempBoard[x][column] + 'dg';
                                 setBoard(tempBoard);
-                                return true;
+                                hasCheck = true;
+                                break;
                             }
                         }
                     }
@@ -965,10 +1087,15 @@ const Board = () => {
                         for (let x = row - 1, y = column + 1; x >= 0 && y <= 7; x--, y++) {
                             const field = board[x][y].slice(0, 2);
                             if (field) {
+                                if (field !== 'wk') {
+                                    hasCheck = false;
+                                    break;
+                                }
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return true;
+                                    hasCheck = true;
+                                    break;
                                 }
                             }
                         }
@@ -977,10 +1104,15 @@ const Board = () => {
                         for (let x = row - 1, y = column - 1; x >= 0 && y >= 0; x--, y--) {
                             const field = board[x][y].slice(0, 2);
                             if (field) {
+                                if (field !== 'wk') {
+                                    hasCheck = false;
+                                    break;
+                                }
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return true;
+                                    hasCheck = true;
+                                    break;
                                 }
                             }
                         }
@@ -990,10 +1122,15 @@ const Board = () => {
                     for (let y = column - 1; y >= 0; y--) {
                         const field = board[row][y].slice(0, 2);
                         if (field) {
+                            if (field !== 'wk') {
+                                hasCheck = false;
+                                break;
+                            }
                             if (field === 'wk') {
                                 tempBoard[row][y] = tempBoard[row][y] + 'dg';
                                 setBoard(tempBoard);
-                                return true;
+                                hasCheck = true;
+                                break;
                             }
                         }
                     }
@@ -1002,17 +1139,22 @@ const Board = () => {
                     for (let y = column + 1; y <= 7; y++) {
                         const field = board[row][y].slice(0, 2);
                         if (field) {
+                            if (field !== 'wk') {
+                                hasCheck = false;
+                                break;
+                            }
                             if (field === 'wk') {
                                 tempBoard[row][y] = tempBoard[row][y] + 'dg';
                                 setBoard(tempBoard);
-                                return true;
+                                hasCheck = true;
+                                break;
                             }
                         }
                     }
                 }
                 break;
         }
-        return false;
+        return hasCheck;
     }
 
     const checkHorseMove = (row: number, column: number, piece: string, squarePosition: string) => {
@@ -2482,6 +2624,7 @@ const Board = () => {
                                 }
                             }
                             for (let xPos = x - 1, yPos = y; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                console.log(tempBoard[xPos][yPos]);
                                 if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
                                     break;
@@ -2872,7 +3015,6 @@ const Board = () => {
                                 }
                             }
                             for (let xPos = x + 1, yPos = y; xPos > 0 && yPos < 7; xPos--, yPos++) {
-                                console.log(tempBoard[xPos][yPos], xPos, yPos);
                                 if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
                                     break;
