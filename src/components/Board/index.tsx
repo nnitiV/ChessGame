@@ -17,11 +17,11 @@ const Board = () => {
     const intialBoardState = [
         ["", "", "", "", "", "", "", ""],
         ["", "", "", "", "", "", "", ""],
-        ["", "", "", "", "", "", "", ""],
+        ["", "", "bk", "", "bk", "", "", ""],
         ["", "", "", "", "", "", "", ""],
         ["", "", "", "wq", "", "", "", ""],
         ["", "", "", "", "", "", "", ""],
-        ["", "", "", "", "bk", "", "", ""],
+        ["", "", "bk", "", "bk", "", "", ""],
         ["", "", "", "", "", "", "", ""]
     ];
     const [board, setBoard] = useState<string[][]>(intialBoardState);
@@ -49,8 +49,8 @@ const Board = () => {
         }
 
         if (selectedPiece && checkIfMovementIsValid(row, column, board[selectedPiece![0]][selectedPiece![1]])) {
-            movePiece(row, column);
-            unselectPiece();
+            let check = movePiece(row, column);
+            if (check) unselectPiece();
         } else if (piece) {
             // Don't do anything in case the player select a piece of a different color
             if (piece !== 'pm' && selectedPiece && piece.slice(0, 1) !== board[selectedPiece![0]][selectedPiece![1]].slice(0, 1)) {
@@ -359,7 +359,10 @@ const Board = () => {
     };
 
     const movePiece = (row: number, column: number) => {
+        // Getting the selected piece 
         const pieceMoving = board[selectedPiece![0]][selectedPiece![1]];
+
+        // Cheking for castle
         if (selectedPiece![0] === 7 && selectedPiece![1] === 4 && pieceMoving === 'wk') {
             let whiteCastleCheck = checkCastleWhite;
             whiteCastleCheck[0] = true;
@@ -370,8 +373,9 @@ const Board = () => {
             blackCastleCheck[0] = true;
             setCheckCastleBlack(blackCastleCheck);
         }
+
         const tempBoard = board;
-        tempBoard[row][column] = pieceMoving;
+        tempBoard[row][column] = pieceMoving.slice(0, 2);
         tempBoard[selectedPiece![0]][selectedPiece![1]] = '';
         if ((row === 0 || row === 7) && pieceMoving.slice(1, 2) === 'p') {
             setOpenPromotionSelection(true);
@@ -383,22 +387,29 @@ const Board = () => {
                 return;
             }
         }));
-        if (!hasCheck && pieceMoving.slice(1, 2) === 'k') {
-            tempBoard[row][column] = pieceMoving.slice(0, 2);
+        if (hasCheck && pieceMoving.slice(1, 2) === 'k') {
+            tempBoard[selectedPiece![0]][selectedPiece![1]] = pieceMoving.slice(0, 2);
+            tempBoard[row][column] = '';
+            return false;
+        }
+        if (hasCheck) {
+            new Audio("move-check.mp3").play();
+        } else {
+            new Audio('./move-self.mp3').play();
         }
         setBoard(tempBoard)
         setRenderScreen(prev => prev.slice(0, 1) + 'a');
         setTotalMoves(totalMove => totalMove + 1);
-        new Audio('./move-self.mp3').play();
         setLastMove([row, column]);
         checkCheck(pieceMoving, row, column);
-        setIsWhiteTurn(prev => !prev);
+        // setIsWhiteTurn(prev => !prev);
         if (checked) {
             if (checked[0] === 'bk' && checked[1] + 1 === 2) {
                 alert("You lost!");
                 setBoard(intialBoardState);
             }
         }
+        return true;
     };
 
     const checkCheck = (pieceMoving: string, row: number, column: number) => {
@@ -408,24 +419,24 @@ const Board = () => {
                 if (board[row - 1][column + 1] === 'bk') {
                     tempBoard[row - 1][column + 1] = tempBoard[row - 1][column + 1] + 'dg';
                     setBoard(tempBoard);
-                    return new Audio("move-check.mp3").play();
+                    return true;
                 }
                 if (board[row - 1][column - 1] === 'bk') {
                     tempBoard[row - 1][column - 1] = tempBoard[row - 1][column - 1] + 'dg';
                     setBoard(tempBoard);
-                    return new Audio("move-check.mp3").play();
+                    return true;
                 }
                 break;
             case 'bp':
                 if (board[row + 1][column + 1] === 'wk') {
                     tempBoard[row + 1][column + 1] = tempBoard[row + 1][column + 1] + 'dg';
                     setBoard(tempBoard);
-                    return new Audio("move-check.mp3").play();
+                    return true;
                 }
                 if (board[row + 1][column - 1] === 'wk') {
                     tempBoard[row + 1][column - 1] = tempBoard[row + 1][column - 1] + 'dg';
                     setBoard(tempBoard);
-                    return new Audio("move-check.mp3").play();
+                    return true;
                 }
                 break;
             case 'wr':
@@ -433,10 +444,11 @@ const Board = () => {
                     for (let x = row + 1; x <= 7; x++) {
                         const field = board[x][column];
                         if (field) {
+
                             if (field === 'bk') {
                                 tempBoard[x][column] = tempBoard[x][column] + 'dg';
                                 setBoard(tempBoard);
-                                return new Audio("move-check.mp3").play();
+                                return true;
                             } else {
                                 return;
                             }
@@ -450,7 +462,7 @@ const Board = () => {
                             if (field === 'bk') {
                                 tempBoard[x][column] = tempBoard[x][column] + 'dg';
                                 setBoard(tempBoard);
-                                return new Audio("move-check.mp3").play();
+                                return true;
                             } else {
                                 return;
                             }
@@ -464,7 +476,7 @@ const Board = () => {
                             if (field === 'bk') {
                                 tempBoard[row][y] = tempBoard[row][y] + 'dg';
                                 setBoard(tempBoard);
-                                return new Audio("move-check.mp3").play();
+                                return true;
                             } else {
                                 return;
                             }
@@ -478,7 +490,7 @@ const Board = () => {
                             if (field === 'bk') {
                                 tempBoard[row][y] = tempBoard[row][y] + 'dg';
                                 setBoard(tempBoard);
-                                return new Audio("move-check.mp3").play();
+                                return true;
                             } else {
                                 return;
                             }
@@ -494,7 +506,7 @@ const Board = () => {
                             if (field === 'wk') {
                                 tempBoard[x][column] = tempBoard[x][column] + 'dg';
                                 setBoard(tempBoard);
-                                return new Audio("move-check.mp3").play();
+                                return true;
                             } else {
                                 return;
                             }
@@ -508,7 +520,7 @@ const Board = () => {
                             if (field === 'wk') {
                                 tempBoard[x][column] = tempBoard[x][column] + 'dg';
                                 setBoard(tempBoard);
-                                return new Audio("move-check.mp3").play();
+                                return true;
                             } else {
                                 return;
                             }
@@ -523,7 +535,7 @@ const Board = () => {
 
                                 tempBoard[row][y] = tempBoard[row][y] + 'dg';
                                 setBoard(tempBoard);
-                                return new Audio("move-check.mp3").play();
+                                return true;
                             } else {
                                 return;
                             }
@@ -538,7 +550,7 @@ const Board = () => {
 
                                 tempBoard[row][y] = tempBoard[row][y] + 'dg';
                                 setBoard(tempBoard);
-                                return new Audio("move-check.mp3").play();
+                                return true;
                             } else {
                                 return;
                             }
@@ -555,7 +567,7 @@ const Board = () => {
                                 if (field === 'bk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return new Audio("move-check.mp3").play();
+                                    return true;
                                 } else {
                                     return;
                                 }
@@ -569,7 +581,7 @@ const Board = () => {
                                 if (field === 'bk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return new Audio("move-check.mp3").play();
+                                    return true;
                                 } else {
                                     return;
                                 }
@@ -585,7 +597,7 @@ const Board = () => {
                                 if (field === 'bk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return new Audio("move-check.mp3").play();
+                                    return true;
                                 } else {
                                     return;
                                 }
@@ -599,7 +611,7 @@ const Board = () => {
                                 if (field === 'bk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return new Audio("move-check.mp3").play();
+                                    return true;
                                 } else {
                                     return;
                                 }
@@ -617,7 +629,7 @@ const Board = () => {
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return new Audio("move-check.mp3").play();
+                                    return true;
                                 } else {
                                     return;
                                 }
@@ -631,7 +643,7 @@ const Board = () => {
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return new Audio("move-check.mp3").play();
+                                    return true;
                                 } else {
                                     return;
                                 }
@@ -647,7 +659,7 @@ const Board = () => {
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return new Audio("move-check.mp3").play();
+                                    return true;
                                 } else {
                                     return;
                                 }
@@ -661,7 +673,7 @@ const Board = () => {
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return new Audio("move-check.mp3").play();
+                                    return true;
                                 } else {
                                     return;
                                 }
@@ -676,7 +688,7 @@ const Board = () => {
                         if (board[row - 2][column + 1] === 'bk') {
                             tempBoard[row - 2][column + 1] = tempBoard[row - 2][column + 1] + 'dg';
                             setBoard(tempBoard);
-                            return new Audio("move-check.mp3").play();
+                            return true;
                         }
                     }
 
@@ -685,7 +697,7 @@ const Board = () => {
                         if (board[row - 1][column + 2] === 'bk') {
                             tempBoard[row - 1][column + 2] = tempBoard[row - 1][column + 2] + 'dg';
                             setBoard(tempBoard);
-                            return new Audio("move-check.mp3").play();
+                            return true;
                         }
                     }
                 }
@@ -695,7 +707,7 @@ const Board = () => {
                         if (board[row + 2][column - 1] === 'bk') {
                             tempBoard[row + 2][column - 1] = tempBoard[row + 2][column - 1] + 'dg';
                             setBoard(tempBoard);
-                            return new Audio("move-check.mp3").play();
+                            return true;
                         }
                     }
 
@@ -703,7 +715,7 @@ const Board = () => {
                         if (board[row + 1][column - 2] === 'bk') {
                             tempBoard[row + 1][column - 2] = tempBoard[row + 1][column - 2] + 'dg';
                             setBoard(tempBoard);
-                            return new Audio("move-check.mp3").play();
+                            return true;
                         }
                     }
                 }
@@ -713,7 +725,7 @@ const Board = () => {
                         if (board[row + 2][column + 1] === 'bk') {
                             tempBoard[row + 2][column + 1] = tempBoard[row + 2][column + 1] + 'dg';
                             setBoard(tempBoard);
-                            return new Audio("move-check.mp3").play();
+                            return true;
                         }
                     }
 
@@ -721,7 +733,7 @@ const Board = () => {
                         if (board[row + 1][column + 2] === 'bk') {
                             tempBoard[row + 1][column + 2] = tempBoard[row + 1][column + 2] + 'dg';
                             setBoard(tempBoard);
-                            return new Audio("move-check.mp3").play();
+                            return true;
                         }
                     }
                 }
@@ -731,7 +743,7 @@ const Board = () => {
                         if (board[row - 2][column - 1] === 'bk') {
                             tempBoard[row - 2][column - 1] = tempBoard[row - 2][column - 1] + 'dg';
                             setBoard(tempBoard);
-                            return new Audio("move-check.mp3").play();
+                            return true;
                         }
                     }
 
@@ -739,7 +751,7 @@ const Board = () => {
                         if (board[row - 1][column - 2] === 'bk') {
                             tempBoard[row - 1][column - 2] = tempBoard[row - 1][column - 2] + 'dg';
                             setBoard(tempBoard);
-                            return new Audio("move-check.mp3").play();
+                            return true;
                         }
                     }
                 }
@@ -748,14 +760,14 @@ const Board = () => {
                 if (row > 0 && column < 7) {
                     if (row > 1) {
                         if (board[row - 2][column + 1] === 'wk') {
-                            return new Audio("move-check.mp3").play();
+                            return true;
                         }
                     }
 
                     if (column < 6) {
                         console.log(board[row - 1][column + 2]);
                         if (board[row - 1][column + 2] === 'wk') {
-                            return new Audio("move-check.mp3").play();
+                            return true;
                         }
                     }
                 }
@@ -763,13 +775,13 @@ const Board = () => {
                 if (row < 7 && column > 0) {
                     if (row < 6) {
                         if (board[row + 2][column - 1] === 'wk') {
-                            return new Audio("move-check.mp3").play();
+                            return true;
                         }
                     }
 
                     if (column > 1) {
                         if (board[row + 1][column - 2] === 'wk') {
-                            return new Audio("move-check.mp3").play();
+                            return true;
                         }
                     }
                 }
@@ -777,13 +789,13 @@ const Board = () => {
                 if (row < 7 && column < 7) {
                     if (row < 6) {
                         if (board[row + 2][column + 1] === 'wk') {
-                            return new Audio("move-check.mp3").play();
+                            return true;
                         }
                     }
 
                     if (column < 6) {
                         if (board[row + 1][column + 2] === 'wk') {
-                            return new Audio("move-check.mp3").play();
+                            return true;
                         }
                     }
                 }
@@ -791,13 +803,13 @@ const Board = () => {
                 if (row > 0 && column < 7) {
                     if (row > 1) {
                         if (board[row - 2][column - 1] === 'wk') {
-                            return new Audio("move-check.mp3").play();
+                            return true;
                         }
                     }
 
                     if (column > 1) {
                         if (board[row - 1][column - 2] === 'wk') {
-                            return new Audio("move-check.mp3").play();
+                            return true;
                         }
                     }
                 }
@@ -810,7 +822,6 @@ const Board = () => {
                             if (field === 'bk') {
                                 tempBoard[x][column] = field + 'dg';
                                 setBoard(tempBoard);
-                                new Audio("move-check.mp3").play();
                                 return true;
                             }
                         }
@@ -822,7 +833,6 @@ const Board = () => {
                                 if (field === 'bk') {
                                     tempBoard[x][y] = field + 'dg';
                                     setBoard(tempBoard);
-                                    new Audio("move-check.mp3").play();
                                     return true;
                                 }
                             }
@@ -835,7 +845,6 @@ const Board = () => {
                                 if (field === 'bk') {
                                     tempBoard[x][y] = field + 'dg';
                                     setBoard(tempBoard);
-                                    new Audio("move-check.mp3").play();
                                     return true;
                                 }
                             }
@@ -846,10 +855,10 @@ const Board = () => {
                     for (let x = row - 1; x >= 0; x--) {
                         const field = board[x][column].slice(0, 2);
                         if (field) {
+                            if (field.slice(1, 2) !== 'k') return false;
                             if (field === 'bk') {
                                 tempBoard[x][column] = field + 'dg';
                                 setBoard(tempBoard);
-                                new Audio("move-check.mp3").play();
                                 return true;
                             }
                         }
@@ -861,7 +870,6 @@ const Board = () => {
                                 if (field === 'bk') {
                                     tempBoard[x][y] = field + 'dg';
                                     setBoard(tempBoard);
-                                    new Audio("move-check.mp3").play();
                                     return true;
                                 }
                             }
@@ -874,7 +882,6 @@ const Board = () => {
                                 if (field === 'bk') {
                                     tempBoard[x][y] = field + 'dg';
                                     setBoard(tempBoard);
-                                    new Audio("move-check.mp3").play();
                                     return true;
                                 }
                             }
@@ -888,7 +895,6 @@ const Board = () => {
                             if (field === 'bk') {
                                 tempBoard[row][y] = field + 'dg';
                                 setBoard(tempBoard);
-                                new Audio("move-check.mp3").play();
                                 return true;
                             }
                         }
@@ -901,7 +907,6 @@ const Board = () => {
                             if (field === 'bk') {
                                 tempBoard[row][y] = field + 'dg';
                                 setBoard(tempBoard);
-                                new Audio("move-check.mp3").play();
                                 return true;
                             }
                         }
@@ -916,7 +921,7 @@ const Board = () => {
                             if (field === 'wk') {
                                 tempBoard[x][column] = tempBoard[x][column] + 'dg';
                                 setBoard(tempBoard);
-                                return new Audio("move-check.mp3").play();
+                                return true;
                             }
                         }
                     }
@@ -927,7 +932,7 @@ const Board = () => {
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return new Audio("move-check.mp3").play();
+                                    return true;
                                 }
                             }
                         }
@@ -939,7 +944,7 @@ const Board = () => {
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return new Audio("move-check.mp3").play();
+                                    return true;
                                 }
                             }
                         }
@@ -952,7 +957,7 @@ const Board = () => {
                             if (field === 'wk') {
                                 tempBoard[x][column] = tempBoard[x][column] + 'dg';
                                 setBoard(tempBoard);
-                                return new Audio("move-check.mp3").play();
+                                return true;
                             }
                         }
                     }
@@ -963,7 +968,7 @@ const Board = () => {
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return new Audio("move-check.mp3").play();
+                                    return true;
                                 }
                             }
                         }
@@ -975,7 +980,7 @@ const Board = () => {
                                 if (field === 'wk') {
                                     tempBoard[x][y] = tempBoard[x][y] + 'dg';
                                     setBoard(tempBoard);
-                                    return new Audio("move-check.mp3").play();
+                                    return true;
                                 }
                             }
                         }
@@ -988,7 +993,7 @@ const Board = () => {
                             if (field === 'wk') {
                                 tempBoard[row][y] = tempBoard[row][y] + 'dg';
                                 setBoard(tempBoard);
-                                return new Audio("move-check.mp3").play();
+                                return true;
                             }
                         }
                     }
@@ -1000,13 +1005,14 @@ const Board = () => {
                             if (field === 'wk') {
                                 tempBoard[row][y] = tempBoard[row][y] + 'dg';
                                 setBoard(tempBoard);
-                                return new Audio("move-check.mp3").play();
+                                return true;
                             }
                         }
                     }
                 }
                 break;
         }
+        return false;
     }
 
     const checkHorseMove = (row: number, column: number, piece: string, squarePosition: string) => {
@@ -1022,7 +1028,6 @@ const Board = () => {
         }
         return false;
     }
-
     // Show possible moviments.
     useEffect(() => {
         const tempBoard = [...board];
@@ -2141,7 +2146,6 @@ const Board = () => {
                     }
                     break;
                 case 'bq':
-                    console.log(`Piece ${tempBoard[selectedPiece[0]][selectedPiece[1] - 1]} at position: [${selectedPiece[0]}, ${selectedPiece[1]}]`);
                     if (selectedPiece[0] > 0) {
                         let x = selectedPiece[0] - 1, y = selectedPiece[1];
                         while (!board[x][y] && x > 0) {
@@ -2448,6 +2452,8 @@ const Board = () => {
                                 if (board[xPos][y].slice(0, 2) === 'wq' || board[xPos][y].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
                                     break;
+                                } else if ((board[xPos][y].slice(0, 2) !== 'wq' || board[xPos][y].slice(0, 2) !== 'wb') && board[xPos][y].slice(0, 2) !== '') {
+                                    break;
                                 }
                             }
                             for (let xPos = x - 1; xPos < 7; xPos++) {
@@ -2455,11 +2461,15 @@ const Board = () => {
                                     console.log(board[xPos][y])
                                     hasPieceToCheckIt = true;
                                     break;
+                                } else if ((board[xPos][y].slice(0, 2) !== 'wq' || board[xPos][y].slice(0, 2) !== 'wb') && board[xPos][y].slice(0, 2) !== '') {
+                                    break;
                                 }
                             }
                             for (let yPos = y; yPos > 0; yPos--) {
                                 if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
+                                    break;
+                                } else if ((board[x - 1][yPos].slice(0, 2) !== 'wq' || board[x - 1][yPos].slice(0, 2) !== 'wb') && board[x - 1][yPos].slice(0, 2) !== '') {
                                     break;
                                 }
                             }
@@ -2467,12 +2477,15 @@ const Board = () => {
                                 if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x - 1][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
                                     break;
+                                } else if ((board[x - 1][yPos].slice(0, 2) !== 'wq' || board[x - 1][yPos].slice(0, 2) !== 'wb') && board[x - 1][yPos].slice(0, 2) !== '') {
+                                    break;
                                 }
                             }
-
                             for (let xPos = x - 1, yPos = y; xPos > 0 && yPos < 7; xPos--, yPos++) {
                                 if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
+                                    break;
+                                } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                     break;
                                 }
                             }
@@ -2480,18 +2493,23 @@ const Board = () => {
                                 if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
                                     break;
+                                } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                    break;
                                 }
                             }
-
                             for (let xPos = x - 1, yPos = y; xPos > 0 && yPos > 0; xPos--, yPos--) {
                                 if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
+                                    break;
+                                } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                     break;
                                 }
                             }
                             for (let xPos = x - 1, yPos = y; xPos < 7 && yPos < 7; xPos++, yPos++) {
                                 if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
+                                    break;
+                                } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                     break;
                                 }
                             }
@@ -2511,11 +2529,15 @@ const Board = () => {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let xPos = x - 1, yPos = y + 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2523,11 +2545,15 @@ const Board = () => {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let xPos = x - 1, yPos = y + 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2535,28 +2561,34 @@ const Board = () => {
                                     if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[x - 1][yPos].slice(0, 2) !== 'wq' || board[x - 1][yPos].slice(0, 2) !== 'wb') && board[x - 1][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let yPos = y + 1; yPos < 7; yPos++) {
                                     if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x - 1][yPos].slice(0, 2) === 'wb') {
-                                        console.log(board[x][yPos])
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[x - 1][yPos].slice(0, 2) !== 'wq' || board[x - 1][yPos].slice(0, 2) !== 'wb') && board[x - 1][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
-                                for (let xPos = x; xPos > 0; xPos--) {
+                                for (let xPos = x - 1; xPos > 0; xPos--) {
                                     if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
-                                    }
-                                }
-                                for (let xPos = x; xPos < 7; xPos++) {
-                                    if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
-                                        hasPieceToCheckIt = true;
+                                    } else if ((board[xPos][y + 1].slice(0, 2) !== 'wq' || board[xPos][y + 1].slice(0, 2) !== 'wb') && board[xPos][y + 1].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
-
+                                for (let xPos = x - 1; xPos < 7; xPos++) {
+                                    if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][y + 1].slice(0, 2) !== 'wq' || board[xPos][y + 1].slice(0, 2) !== 'wb') && board[xPos][y + 1].slice(0, 2) !== '') {
+                                        break;
+                                    }
+                                }
                                 if (!hasPieceToCheckIt) {
                                     tempBoard[x - 1][y + 1] = 'pm';
                                     setBoard(tempBoard);
@@ -2572,18 +2604,23 @@ const Board = () => {
                                     if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[x][yPos].slice(0, 2) !== 'wq' || board[x][yPos].slice(0, 2) !== 'wr') && board[x][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let yPos = y - 1; yPos > 0; yPos--) {
                                     if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[x][yPos].slice(0, 2) !== 'wq' || board[x][yPos].slice(0, 2) !== 'wr') && board[x][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
-
                                 for (let xPos = x; xPos > 0; xPos--) {
                                     if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[x][y + 1].slice(0, 2) !== 'wq' || board[x][y + 1].slice(0, 2) !== 'wr') && board[x][y + 1].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2591,12 +2628,16 @@ const Board = () => {
                                     if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[x][y + 1].slice(0, 2) !== 'wq' || board[x][y + 1].slice(0, 2) !== 'wr') && board[x][y + 1].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
 
                                 for (let xPos = x, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2604,24 +2645,31 @@ const Board = () => {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let xPos = x - 1, yPos = y; xPos < 7 && yPos < 7; xPos++, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
-
                                 for (let xPos = x, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
                                 for (let xPos = x, yPos = y + 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2642,11 +2690,16 @@ const Board = () => {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
+
                                 }
                                 for (let xPos = x - 1, yPos = y - 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2654,11 +2707,15 @@ const Board = () => {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let xPos = x - 1, yPos = y - 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2666,11 +2723,15 @@ const Board = () => {
                                     if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[x - 1][yPos].slice(0, 2) !== 'wq' || board[x - 1][yPos].slice(0, 2) !== 'wr') && board[x - 1][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let yPos = y + 1; yPos < 7; yPos++) {
                                     if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x - 1][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[x - 1][yPos].slice(0, 2) !== 'wq' || board[x - 1][yPos].slice(0, 2) !== 'wr') && board[x - 1][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2678,11 +2739,15 @@ const Board = () => {
                                     if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][y - 1].slice(0, 2) !== 'wq' || board[xPos][y - 1].slice(0, 2) !== 'wr') && board[xPos][y - 1].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let xPos = x; xPos < 7; xPos++) {
                                     if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][y - 1].slice(0, 2) !== 'wq' || board[xPos][y - 1].slice(0, 2) !== 'wr') && board[xPos][y - 1].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2701,11 +2766,15 @@ const Board = () => {
                                     if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[x][yPos].slice(0, 2) !== 'wq' || board[x][yPos].slice(0, 2) !== 'wb') && board[x][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let yPos = y - 1; yPos > 0; yPos--) {
                                     if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[x][yPos].slice(0, 2) !== 'wq' || board[x][yPos].slice(0, 2) !== 'wb') && board[x][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2713,11 +2782,15 @@ const Board = () => {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let xPos = x, yPos = y - 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2725,19 +2798,23 @@ const Board = () => {
                                     if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][y - 1].slice(0, 2) !== 'wq' || board[xPos][y - 1].slice(0, 2) !== 'wr') && board[xPos][y - 1].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let xPos = x; xPos < 7; xPos++) {
                                     if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][y - 1].slice(0, 2) !== 'wq' || board[xPos][y - 1].slice(0, 2) !== 'wr') && board[xPos][y - 1].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
-
-
                                 for (let xPos = x, yPos = y - 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2745,9 +2822,10 @@ const Board = () => {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
-
                                 if (!hasPieceToCheckIt) {
                                     tempBoard[x][y - 1] = 'pm';
                                     setBoard(tempBoard);
@@ -2765,18 +2843,23 @@ const Board = () => {
                                 if (board[xPos][y].slice(0, 2) === 'wq' || board[xPos][y].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
                                     break;
+                                } else if ((board[xPos][y].slice(0, 2) !== 'wq' || board[xPos][y].slice(0, 2) !== 'wb') && board[xPos][y].slice(0, 2) !== '') {
+                                    break;
                                 }
                             }
                             for (let xPos = x + 1; xPos > 0; xPos--) {
                                 if (board[xPos][y].slice(0, 2) === 'wq' || board[xPos][y].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
                                     break;
+                                } else if ((board[xPos][y].slice(0, 2) !== 'wq' || board[xPos][y].slice(0, 2) !== 'wb') && board[xPos][y].slice(0, 2) !== '') {
+                                    break;
                                 }
                             }
-
                             for (let yPos = y; yPos > 0; yPos--) {
                                 if (board[x + 1][yPos].slice(0, 2) === 'wq' || board[x + 1][yPos].slice(0, 2) === 'wr') {
                                     hasPieceToCheckIt = true;
+                                    break;
+                                } else if ((board[x + 1][yPos].slice(0, 2) !== 'wq' || board[x + 1][yPos].slice(0, 2) !== 'wb') && board[x + 1][yPos].slice(0, 2) !== '') {
                                     break;
                                 }
                             }
@@ -2784,18 +2867,24 @@ const Board = () => {
                                 if (board[x + 1][yPos].slice(0, 2) === 'wq' || board[x + 1][yPos].slice(0, 2) === 'wr') {
                                     hasPieceToCheckIt = true;
                                     break;
-                                }
-                            }
-                            for (let xPos = x, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
-                                if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
-                                    hasPieceToCheckIt = true;
+                                } else if ((board[x + 1][yPos].slice(0, 2) !== 'wq' || board[x + 1][yPos].slice(0, 2) !== 'wb') && board[x + 1][yPos].slice(0, 2) !== '') {
                                     break;
                                 }
                             }
-
+                            for (let xPos = x + 1, yPos = y; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                console.log(tempBoard[xPos][yPos], xPos, yPos);
+                                if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
+                                    hasPieceToCheckIt = true;
+                                    break;
+                                } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                    break;
+                                }
+                            }
                             for (let xPos = x + 1, yPos = y; xPos > 0 && yPos > 0; xPos--, yPos--) {
                                 if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
+                                    break;
+                                } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                     break;
                                 }
                             }
@@ -2803,17 +2892,23 @@ const Board = () => {
                                 if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
                                     break;
+                                } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                    break;
                                 }
                             }
                             for (let xPos = x + 1, yPos = y; xPos > 0 && yPos < 7; xPos--, yPos++) {
                                 if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
                                     break;
+                                } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                    break;
                                 }
                             }
                             for (let xPos = x + 1, yPos = y; xPos < 7 && yPos > 0; xPos++, yPos--) {
                                 if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
+                                    break;
+                                } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                     break;
                                 }
                             }
@@ -2832,11 +2927,15 @@ const Board = () => {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let xPos = x + 1, yPos = y - 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2844,23 +2943,31 @@ const Board = () => {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let xPos = x + 1, yPos = y - 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
-                                    }
-                                }
-                                for (let xPos = x; xPos > 0; xPos--) {
-                                    if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
-                                        hasPieceToCheckIt = true;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
-                                for (let xPos = x; xPos < 7; xPos++) {
+                                for (let xPos = x + 1; xPos > 0; xPos--) {
                                     if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][y - 1].slice(0, 2) !== 'wq' || board[xPos][y - 1].slice(0, 2) !== 'wr') && board[xPos][y - 1].slice(0, 2) !== '') {
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x + 1; xPos < 7; xPos++) {
+                                    if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][y - 1].slice(0, 2) !== 'wq' || board[xPos][y - 1].slice(0, 2) !== 'wr') && board[xPos][y - 1].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2868,11 +2975,15 @@ const Board = () => {
                                     if (board[x + 1][yPos].slice(0, 2) === 'wq' || board[x + 1][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[x + 1][yPos].slice(0, 2) !== 'wq' || board[x + 1][yPos].slice(0, 2) !== 'wr') && board[x + 1][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let yPos = y - 1; yPos < 7; yPos++) {
                                     if (board[x + 1][yPos].slice(0, 2) === 'wq' || board[x + 1][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[x + 1][yPos].slice(0, 2) !== 'wq' || board[x + 1][yPos].slice(0, 2) !== 'wr') && board[x + 1][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2890,11 +3001,15 @@ const Board = () => {
                                     if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[x][yPos].slice(0, 2) !== 'wq' || board[x][yPos].slice(0, 2) !== 'wr') && board[x][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let yPos = y - 1; yPos > 0; yPos--) {
                                     if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[x][yPos].slice(0, 2) !== 'wq' || board[x][yPos].slice(0, 2) !== 'wr') && board[x][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2902,11 +3017,15 @@ const Board = () => {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let xPos = x, yPos = y - 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2914,11 +3033,15 @@ const Board = () => {
                                     if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][y - 1].slice(0, 2) !== 'wq' || board[xPos][y - 1].slice(0, 2) !== 'wr') && board[xPos][y - 1].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let xPos = x; xPos < 7; xPos++) {
                                     if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][y - 1].slice(0, 2) !== 'wq' || board[xPos][y - 1].slice(0, 2) !== 'wr') && board[xPos][y - 1].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2926,11 +3049,15 @@ const Board = () => {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let xPos = x, yPos = y - 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2946,15 +3073,19 @@ const Board = () => {
                         if (y < 7) {
                             if (!board[x + 1][y + 1]) {
                                 let hasPieceToCheckIt: boolean = false;
-                                for (let xPos = x - 1, yPos = y - 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                for (let xPos = x + 1, yPos = y + 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
-                                for (let xPos = x - 1, yPos = y - 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                for (let xPos = x + 1, yPos = y + 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2962,23 +3093,31 @@ const Board = () => {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let xPos = x + 1, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
-                                    }
-                                }
-                                for (let xPos = x; xPos > 0; xPos--) {
-                                    if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
-                                        hasPieceToCheckIt = true;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
-                                for (let xPos = x; xPos < 7; xPos++) {
+                                for (let xPos = x + 1; xPos > 0; xPos--) {
                                     if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][y + 1].slice(0, 2) !== 'wq' || board[xPos][y + 1].slice(0, 2) !== 'wb') && board[xPos][y + 1].slice(0, 2) !== '') {
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x + 1; xPos < 7; xPos++) {
+                                    if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][y + 1].slice(0, 2) !== 'wq' || board[xPos][y + 1].slice(0, 2) !== 'wb') && board[xPos][y + 1].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -2986,11 +3125,15 @@ const Board = () => {
                                     if (board[x + 1][yPos].slice(0, 2) === 'wq' || board[x + 1][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[x + 1][yPos].slice(0, 2) !== 'wq' || board[x + 1][yPos].slice(0, 2) !== 'wb') && board[x + 1][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let yPos = y + 1; yPos < 7; yPos++) {
                                     if (board[x + 1][yPos].slice(0, 2) === 'wq' || board[x + 1][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[x + 1][yPos].slice(0, 2) !== 'wq' || board[x + 1][yPos].slice(0, 2) !== 'wb') && board[x + 1][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -3002,11 +3145,14 @@ const Board = () => {
                                 tempBoard[x + 1][y + 1] = tempBoard[x + 1][y + 1].slice(0, 3) + 'et';
                                 setBoard(tempBoard);
                             }
+
                             if (!board[x][y + 1]) {
                                 let hasPieceToCheckIt: boolean = false;
                                 for (let yPos = y + 1; yPos < 7; yPos++) {
                                     if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[x][yPos].slice(0, 2) !== 'wq' || board[x][yPos].slice(0, 2) !== 'wr') && board[x][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -3014,12 +3160,15 @@ const Board = () => {
                                     if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[x][yPos].slice(0, 2) !== 'wq' || board[x][yPos].slice(0, 2) !== 'wr') && board[x][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
-
                                 for (let xPos = x; xPos > 0; xPos--) {
                                     if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][y + 1].slice(0, 2) !== 'wq' || board[xPos][y + 1].slice(0, 2) !== 'wr') && board[xPos][y + 1].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -3027,12 +3176,7 @@ const Board = () => {
                                     if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
-                                    }
-                                }
-
-                                for (let yPos = y - 1; yPos > 0; yPos--) {
-                                    if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
-                                        hasPieceToCheckIt = true;
+                                    } else if ((board[xPos][y + 1].slice(0, 2) !== 'wq' || board[xPos][y + 1].slice(0, 2) !== 'wr') && board[xPos][y + 1].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -3040,12 +3184,15 @@ const Board = () => {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
-
                                 for (let xPos = x - 1, yPos = y; xPos > 0 && yPos > 0; xPos--, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -3053,17 +3200,23 @@ const Board = () => {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let xPos = x, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
+                                        break;
                                     }
                                 }
                                 for (let xPos = x, yPos = y + 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
                                         break;
                                     }
                                 }
@@ -3136,7 +3289,6 @@ const Board = () => {
     }, [pieceToSubstituteWith]);
 
     useEffect(() => {
-        console.log(checked)
         let itHasCheck: boolean = false;
         let fieldPosition: number[] = [];
         board.map((row, rowIndex) => {
