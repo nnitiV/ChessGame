@@ -8,7 +8,7 @@ const Board = () => {
         ["br", "bn", "bb", "bq", "bk", "bb", "bn", "br"],
         ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
         ["", "", "", "", "", "", "", ""],
-        ["", "", "", "", "", "", "", ""],
+        ["", "", "wp", "", "wp", "", "", ""],
         ["", "", "", "", "", "", "", ""],
         ["", "", "", "", "", "", "", ""],
         ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
@@ -29,7 +29,7 @@ const Board = () => {
     const [selectedPiece, setSelectedPiece] = useState<number[] | null>(null);
     const [gameIsFinished, setGameIsFinished] = useState<boolean>(false);
     const [_, setPieceIsSelected] = useState<boolean>(false);
-    const [isWhiteTurn, setIsWhiteTurn] = useState<boolean>(true);
+    const [isWhiteTurn, setIsWhiteTurn] = useState<boolean>(false);
     const [showMessage, setShowMessage] = useState<boolean>(false);
     const [message, setMessage] = useState<string>("");
     const [openPromotionSelection, setOpenPromotionSelection] = useState<boolean>(false);
@@ -39,6 +39,8 @@ const Board = () => {
     const [checkCastleWhite, setCheckCastleWhite] = useState<boolean[]>([false, false, false]);
     const [checkCastleBlack, setCheckCastleBlack] = useState<boolean[]>([false, false, false]);
     const [checked, setChecked] = useState<[string, number]>(["", 0]);
+    // Check the en passant with the position of the pawn that can do it
+    const [enpassant, setEnpassant] = useState<[boolean, number, number, number, number]>([false, -1, -1, -1, -1]);
 
     const clickField = (row: number, column: number, piece: string) => {
         if (checkPlayerTurn(piece)) return;
@@ -91,18 +93,32 @@ const Board = () => {
     };
 
     const checkIfMovementIsValid = (row: number, column: number, piece: string) => {
+        console.log(row, column);
         let squarePosition = board[row][column];
         const rowDifference = Math.abs(row - selectedPiece![0]), columnDifference = Math.abs(column - selectedPiece![1]);
         const tempBoard = board;
         switch (piece.slice(0, 2)) {
             case 'wp':
+                if (enpassant[0] && (row === (enpassant[1] - 1) && column === (enpassant[2] - 1))) {
+                    tempBoard[enpassant[1]][enpassant[2] - 1] = '';
+                    setBoard(tempBoard);
+                    new Audio('capture.mp3').play();
+                    return true;
+                }
+
                 if (checkIfIsSameColumn(column)) {
                     if (selectedPiece![0] === 6) {
                         if (row === (selectedPiece![0] - 2) && (!board[row][column] || board[row][column] === 'pm')) {
+                            if (board[row][column + 1].slice(0, 2) === 'bp') {
+                                setEnpassant([true, row, column + 1, -1, -1]);
+                            }
+                            if (board[row][column - 1].slice(0, 2) === 'bp') {
+                                setEnpassant([true, row, column + 1, -1, -1]);
+                            }
                             return checkRow(row);
                         }
                     }
-                    if (row === (selectedPiece![0] - 1)) {
+                    if (row === (selectedPiece![0] - 1) && (!board[row][column] || board[row][column] === 'pm')) {
                         return !board[row][column] || board[row][column] === 'pm';
                     }
                 }
@@ -114,6 +130,12 @@ const Board = () => {
                 if (checkIfIsSameColumn(column)) {
                     if (selectedPiece![0] === 1) {
                         if (row === (selectedPiece![0] + 2) && (!board[row][column] || board[row][column] === 'pm')) {
+                            if (board[row][column + 1].slice(0, 2) === 'wp') {
+                                setEnpassant([true, row, column + 1, -1, -1]);
+                            }
+                            if (board[row][column - 1].slice(0, 2) === 'wp') {
+                                setEnpassant([true, row, column + 1, -1, -1]);
+                            }
                             return checkRow(row);
                         }
                     }
@@ -772,7 +794,6 @@ const Board = () => {
                     }
 
                     if (column < 6) {
-                        console.log(board[row - 1][column + 2]);
                         if (board[row - 1][column + 2] === 'bk') {
                             tempBoard[row - 1][column + 2] = tempBoard[row - 1][column + 2] + 'dg';
                             setBoard(tempBoard);
@@ -1218,7 +1239,6 @@ const Board = () => {
                 }
                 break;
         }
-        if (pieceMoving == 'wq') console.log(hasCheck, pieceMoving);
         return hasCheck;
     }
 
@@ -1244,7 +1264,6 @@ const Board = () => {
             const piece = board[selectedPiece[0]][selectedPiece[1]];
             switch (piece.slice(0, 2)) {
                 case 'wp':
-                    console.log(`Piece ${tempBoard[selectedPiece[0]][selectedPiece[1] - 1]} at position: [${selectedPiece[0]}, ${selectedPiece[1]}]`);
                     for (let x = 1; x <= 2; x++) {
                         if (selectedPiece[0] !== 6 && x == 2) break;
                         if (x == 1) {
@@ -1263,6 +1282,18 @@ const Board = () => {
                             setBoard(tempBoard);
                         } else {
                             return console.log(`Pìece found at [${selectedPiece[0] - x}, ${selectedPiece[1]}]`);
+                        }
+                    }
+                    if (selectedPiece) {
+                        if (enpassant[0] && (selectedPiece[0] === enpassant[1] && selectedPiece[1] === enpassant[2]) || (selectedPiece[0] === enpassant[3] && selectedPiece[1] === enpassant[4])) {
+                            if (board[selectedPiece[0]][selectedPiece[1] - 1].slice(0, 2) === 'bp' && !tempBoard[selectedPiece[0] + 1][selectedPiece[1] - 1]) {
+                                tempBoard[selectedPiece[0] - 1][selectedPiece[1] - 1] = 'pm';
+                                setBoard(tempBoard);
+                            }
+                            if (board[selectedPiece[0]][selectedPiece[1] + 1].slice(0, 2) === 'bp' && !tempBoard[selectedPiece[0] + 1][selectedPiece[1] + 1]) {
+                                tempBoard[selectedPiece[0] - 1][selectedPiece[1] + 1] = 'pm';
+                                setBoard(tempBoard);
+                            }
                         }
                     }
                     break;
@@ -3612,21 +3643,21 @@ const Board = () => {
     }, [board]);
 
     // Reset game after 50 moves.
-    // useEffect(() => {
-    //     if (totalMoves == 50) {
-    //         setTimeout(() => {
-    //             setShowMessage(true);
-    //             setGameIsFinished(true);
-    //             setMessage("Total moves amount reached. Resetting the game...")
-    //         }, 15);
-    //         setTimeout(() => {
-    //             setBoard(intialBoardState);
-    //             setTotalMoves(0);
-    //             setGameIsFinished(false);
-    //             setIsWhiteTurn(true);
-    //         }, 3000)
-    //     }
-    // }, [totalMoves])
+    useEffect(() => {
+        if (totalMoves == 50) {
+            setTimeout(() => {
+                setShowMessage(true);
+                setGameIsFinished(true);
+                setMessage("Total moves amount reached. Resetting the game...")
+            }, 15);
+            setTimeout(() => {
+                setBoard(intialBoardState);
+                setTotalMoves(0);
+                setGameIsFinished(false);
+                setIsWhiteTurn(true);
+            }, 3000)
+        }
+    }, [totalMoves])
 
     // Updates the board when you choose a piece to promote
     const udpateBord = () => {
@@ -3642,26 +3673,19 @@ const Board = () => {
     useEffect(() => {
         udpateBord();
     }, [pieceToSubstituteWith]);
-
-    useEffect(() => {
-        let itHasCheck: boolean = false;
-        let fieldPosition: number[] = [];
-        board.map((row, rowIndex) => {
-            row.map((position, columIndex) => {
-                if (checkCheck(position, rowIndex, columIndex)) {
-                    itHasCheck = true;
-                    fieldPosition = [rowIndex, columIndex];
-                }
-            })
-        });
-        // if (itHasCheck) {
-        //     if (board[fieldPosition[0]][fieldPosition[1]].slice(0, 1) === 'w') {
-        //         setChecked(prev => ['bk', 1]);
-        //     } else if (board[fieldPosition[0]][fieldPosition[1]].slice(0, 1) === 'b') {
-        //         setChecked(prev => ['wk', 1]);
-        //     }
-        // }
-    }, []);
+    // Used to test check when rendering
+    // useEffect(() => {
+    //     let itHasCheck: boolean = false;
+    //     let fieldPosition: number[] = [];
+    //     board.map((row, rowIndex) => {
+    //         row.map((position, columIndex) => {
+    //             if (checkCheck(position, rowIndex, columIndex)) {
+    //                 itHasCheck = true;
+    //                 fieldPosition = [rowIndex, columIndex];
+    //             }
+    //         })
+    //     });
+    // }, []);
 
     return (
         <>
