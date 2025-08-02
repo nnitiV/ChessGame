@@ -38,7 +38,6 @@ const Board = () => {
     const [renderScreen, setRenderScreen] = useState<string>("");
     const [checkCastleWhite, setCheckCastleWhite] = useState<boolean[]>([false, false, false]);
     const [checkCastleBlack, setCheckCastleBlack] = useState<boolean[]>([false, false, false]);
-    const [checked, setChecked] = useState<[string, number]>(["", 0]);
     // Check the en passant with the position of the pawn that can do it
     const [enpassant, setEnpassant] = useState<[boolean, number, number, number, number, number]>([false, -1, -1, -1, -1, -1]);
 
@@ -439,12 +438,6 @@ const Board = () => {
         setLastMove([row, column]);
         checkCheck(pieceMoving, row, column);
         setIsWhiteTurn(prev => !prev);
-        if (checked) {
-            if (checked[0] === 'bk' && checked[1] + 1 === 2) {
-                alert("You lost!");
-                setBoard(intialBoardState);
-            }
-        }
         return true;
     };
 
@@ -3698,19 +3691,6 @@ const Board = () => {
     useEffect(() => {
         udpateBord();
     }, [pieceToSubstituteWith]);
-    // Used to test check when rendering
-    // useEffect(() => {
-    //     let itHasCheck: boolean = false;
-    //     let fieldPosition: number[] = [];
-    //     board.map((row, rowIndex) => {
-    //         row.map((position, columIndex) => {
-    //             if (checkCheck(position, rowIndex, columIndex)) {
-    //                 itHasCheck = true;
-    //                 fieldPosition = [rowIndex, columIndex];
-    //             }
-    //         })
-    //     });
-    // }, []);
 
     return (
         <>
