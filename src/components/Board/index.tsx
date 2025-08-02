@@ -2544,7 +2544,7 @@ const Board = () => {
                     }
                     if (!hasMoves) {
                         let hasAnotherPiece = false;
-                        tempBoard.map((row, rIndex) => row.map((pos, cIndex) => {
+                        tempBoard.map((row, _) => row.map((pos, _) => {
                             if (pos.slice(0, 1) === 'w' && pos.slice(1, 2) !== 'k') {
                                 console.log(pos)
                                 hasAnotherPiece = true;
