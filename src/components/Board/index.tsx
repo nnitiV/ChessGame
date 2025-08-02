@@ -9,7 +9,7 @@ const Board = () => {
         ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
         ["", "", "", "", "", "", "", ""],
         ["", "", "wp", "", "wp", "", "", ""],
-        ["", "", "", "", "", "", "", ""],
+        ["", "", "bp", "", "bp", "", "", ""],
         ["", "", "", "", "", "", "", ""],
         ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
         ["wr", "wn", "wb", "wq", "wk", "wb", "wn", "wr"]
@@ -40,11 +40,10 @@ const Board = () => {
     const [checkCastleBlack, setCheckCastleBlack] = useState<boolean[]>([false, false, false]);
     const [checked, setChecked] = useState<[string, number]>(["", 0]);
     // Check the en passant with the position of the pawn that can do it
-    const [enpassant, setEnpassant] = useState<[boolean, number, number, number, number]>([false, -1, -1, -1, -1]);
+    const [enpassant, setEnpassant] = useState<[boolean, number, number, number, number, number]>([false, -1, -1, -1, -1, -1]);
 
     const clickField = (row: number, column: number, piece: string) => {
         if (checkPlayerTurn(piece)) return;
-
         // Unselect piece if click on already selected one.
         if (selectedPiece && row === selectedPiece[0] && column === selectedPiece[1]) {
             return unselectPiece()
@@ -93,28 +92,32 @@ const Board = () => {
     };
 
     const checkIfMovementIsValid = (row: number, column: number, piece: string) => {
-        console.log(row, column);
         let squarePosition = board[row][column];
         const rowDifference = Math.abs(row - selectedPiece![0]), columnDifference = Math.abs(column - selectedPiece![1]);
         const tempBoard = board;
         switch (piece.slice(0, 2)) {
             case 'wp':
-                if (enpassant[0] && (row === (enpassant[1] - 1) && column === (enpassant[2] - 1))) {
-                    tempBoard[enpassant[1]][enpassant[2] - 1] = '';
-                    setBoard(tempBoard);
-                    new Audio('capture.mp3').play();
-                    return true;
+                if (enpassant[0] && ((selectedPiece![0] === enpassant[1] && selectedPiece![1] === enpassant[2]) || (selectedPiece![0] === enpassant[3] && selectedPiece![1] === enpassant[4]))) {
+                    if (column === enpassant[5] && tempBoard[row + 1][column].slice(0, 2) === 'bp') {
+                        tempBoard[row + 1][column] = '';
+                        setBoard(tempBoard);
+                        new Audio('capture.mp3').play();
+                        return true;
+                    }
                 }
 
                 if (checkIfIsSameColumn(column)) {
                     if (selectedPiece![0] === 6) {
                         if (row === (selectedPiece![0] - 2) && (!board[row][column] || board[row][column] === 'pm')) {
+                            let enpassaant: [boolean, number, number, number, number, number] = [false, -1, -1, -1, -1, column];
                             if (board[row][column + 1].slice(0, 2) === 'bp') {
-                                setEnpassant([true, row, column + 1, -1, -1]);
+                                enpassaant = [true, row, column + 1, -1, -1, column];
                             }
                             if (board[row][column - 1].slice(0, 2) === 'bp') {
-                                setEnpassant([true, row, column + 1, -1, -1]);
+                                if (enpassaant[1] != -1) enpassaant = [true, enpassaant[1], enpassaant[2], row, column - 1, column];
+                                else enpassaant = [true, row, column - 1, -1, -1, column];
                             }
+                            setEnpassant(enpassaant);
                             return checkRow(row);
                         }
                     }
@@ -127,15 +130,27 @@ const Board = () => {
                 }
                 break;
             case 'bp':
+                if (enpassant[0] && ((selectedPiece![0] === enpassant[1] && selectedPiece![1] === enpassant[2]) || (selectedPiece![0] === enpassant[3] && selectedPiece![1] === enpassant[4]))) {
+                    if (column === enpassant[5] && tempBoard[row - 1][column].slice(0, 2) === 'wp') {
+                        tempBoard[row - 1][column] = '';
+                        setBoard(tempBoard);
+                        new Audio('capture.mp3').play();
+                        return true;
+                    }
+                }
+
                 if (checkIfIsSameColumn(column)) {
                     if (selectedPiece![0] === 1) {
                         if (row === (selectedPiece![0] + 2) && (!board[row][column] || board[row][column] === 'pm')) {
+                            let enpassaant: [boolean, number, number, number, number, number] = [false, -1, -1, -1, -1, column];
                             if (board[row][column + 1].slice(0, 2) === 'wp') {
-                                setEnpassant([true, row, column + 1, -1, -1]);
+                                enpassaant = [true, row, column + 1, -1, -1, column];
                             }
                             if (board[row][column - 1].slice(0, 2) === 'wp') {
-                                setEnpassant([true, row, column + 1, -1, -1]);
+                                if (enpassaant[1] != -1) enpassaant = [true, enpassaant[1], enpassaant[2], row, column - 1, column];
+                                else enpassaant = [true, row, column - 1, -1, -1, column];
                             }
+                            setEnpassant(enpassaant);
                             return checkRow(row);
                         }
                     }
@@ -2466,6 +2481,16 @@ const Board = () => {
                             setBoard(tempBoard);
                         } else {
                             return console.log(`Pìece found at[${selectedPiece[0] + x}, ${selectedPiece[1]}]`);
+                        }
+                    }
+                    if (enpassant[0] && (selectedPiece[0] === enpassant[1] && selectedPiece[1] === enpassant[2]) || (selectedPiece[0] === enpassant[3] && selectedPiece[1] === enpassant[4])) {
+                        if (board[selectedPiece[0]][selectedPiece[1] - 1].slice(0, 2) === 'wp' && !tempBoard[selectedPiece[0] + 1][selectedPiece[1] - 1]) {
+                            tempBoard[selectedPiece[0] + 1][selectedPiece[1] - 1] = 'pm';
+                            setBoard(tempBoard);
+                        }
+                        if (board[selectedPiece[0]][selectedPiece[1] + 1].slice(0, 2) === 'wp' && !tempBoard[selectedPiece[0] + 1][selectedPiece[1] + 1]) {
+                            tempBoard[selectedPiece[0] + 1][selectedPiece[1] + 1] = 'pm';
+                            setBoard(tempBoard);
                         }
                     }
                     break;
