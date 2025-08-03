@@ -1,6 +1,7 @@
 .messageDiv {
     position: absolute;
     right: 5%;
+    opacity: 0;
     top: 23vw;
     border-radius: 1vw;
     width: 25vw;
@@ -15,5 +16,5 @@
 }
 
 .messageDiv.active {
-    visibility: visible;
+    opacity: 1;
 }
