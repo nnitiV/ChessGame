@@ -164,3 +164,9 @@
     }
 
 }
+
+@media (max-width: 508px) {
+    .game .board div {
+        height: 3rem;
+    }
+}
