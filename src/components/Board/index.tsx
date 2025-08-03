@@ -4,27 +4,27 @@ import Message from "./message";
 import Promote from "./Promote";
 
 const Board = () => {
-    // const intialBoardState = [
-    //     ["br", "bn", "bb", "bq", "bk", "bb", "bn", "br"],
-    //     ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
-    //     ["", "", "", "", "", "", "", ""],
-    //     ["", "", "", "", "", "", "", ""],
-    //     ["", "", "", "", "", "", "", ""],
-    //     ["", "", "", "", "", "", "", ""],
-    //     ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
-    //     ["wr", "wn", "wb", "wq", "wk", "wb", "wn", "wr"]
-    // ];
-    // Board for tests
     const intialBoardState = [
-        ["bk", "", "wk", "", "", "", "", ""],
-        ["", "", "", "", "", "", "", ""],
-        ["", "", "", "bq", "", "", "", ""],
-        ["", "", "", "", "", "", "", ""],
+        ["br", "bn", "bb", "bq", "bk", "bb", "bn", "br"],
+        ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
         ["", "", "", "", "", "", "", ""],
         ["", "", "", "", "", "", "", ""],
         ["", "", "", "", "", "", "", ""],
-        ["", "", "", "", "", "", "", ""]
+        ["", "", "", "", "", "", "", ""],
+        ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
+        ["wr", "wn", "wb", "wq", "wk", "wb", "wn", "wr"]
     ];
+    // Board for tests
+    // const intialBoardState = [
+    //     ["bk", "", "wk", "", "", "", "", ""],
+    //     ["", "", "", "", "", "", "", ""],
+    //     ["", "", "", "bq", "", "", "", ""],
+    //     ["", "", "", "", "", "", "", ""],
+    //     ["", "", "", "", "", "", "", ""],
+    //     ["", "", "", "", "", "", "", ""],
+    //     ["", "", "", "", "", "", "", ""],
+    //     ["", "", "", "", "", "", "", ""]
+    // ];
     const [board, setBoard] = useState<string[][]>(intialBoardState);
     const [totalMoves, setTotalMoves] = useState<number>(0);
     const [selectedPiece, setSelectedPiece] = useState<number[] | null>(null);
@@ -1284,7 +1284,7 @@ const Board = () => {
         return false;
     }
 
-    const isThereAnyPieceProtecting = (yPos: number, xPos: number) => {
+    const isThereAnyPieceProtecting = (xPos: number, yPos: number) => {
         let foundPawn = false, foundKnight = false, foundHorizontal = false, foundVertical = false, foundDiagonal = false;
         if (xPos > 0 && yPos > 0 && board[xPos - 1][yPos - 1].slice(0, 2) === 'bp') foundPawn = true;
         if (!foundPawn && xPos > 0 && yPos < 7 && board[xPos - 1][yPos + 1].slice(0, 2) === 'bp') foundPawn = true;
@@ -1302,6 +1302,7 @@ const Board = () => {
         if (!foundPawn && !foundKnight && !foundHorizontal && !foundVertical && !foundDiagonal) for (let xPosSearch = xPos + 1, yPosSearch = yPos + 1; xPosSearch <= 7 && yPosSearch <= 7; xPosSearch++, yPosSearch++) if (board[xPosSearch][yPosSearch].slice(0, 2) === 'bq' || board[xPosSearch][yPosSearch].slice(0, 2) === 'bb') foundDiagonal = true;
         if (!foundPawn && !foundKnight && !foundHorizontal && !foundVertical && !foundDiagonal) for (let xPosSearch = xPos - 1, yPosSearch = yPos - 1; xPosSearch >= 0 && yPosSearch >= 0; xPosSearch--, yPosSearch--) if (board[xPosSearch][yPosSearch].slice(0, 2) === 'bq' || board[xPosSearch][yPosSearch].slice(0, 2) === 'bb') foundDiagonal = true;
         if (!foundPawn && !foundKnight && !foundHorizontal && !foundVertical && !foundDiagonal) for (let xPosSearch = xPos + 1, yPosSearch = yPos - 1; xPosSearch <= 7 && yPosSearch >= 0; xPosSearch++, yPosSearch--) if (board[xPosSearch][yPosSearch].slice(0, 2) === 'bq' || board[xPosSearch][yPosSearch].slice(0, 2) === 'bb') foundDiagonal = true;
+        console.log(foundPawn, foundKnight, foundHorizontal, foundVertical, foundDiagonal);
         return !foundPawn && !foundKnight && !foundHorizontal && !foundVertical && !foundDiagonal;
     }
     const checkIfKingsWillTouch = (x: number, y: number) => {
@@ -2215,6 +2216,7 @@ const Board = () => {
                             }
                         } else if (board[x + 1][y].slice(0, 1) === 'b') {
                             let xPos = x + 1, yPos = y;
+                            console.log("X: " + x, "Y: " + y, "xPos: " + xPos, "yPos: " + yPos);
                             if (isThereAnyPieceProtecting(xPos, yPos)) {
                                 tempBoard[x + 1][y] = tempBoard[x + 1][y].slice(0, 2) + 'et';
                                 hasMoves = true;
@@ -2546,7 +2548,6 @@ const Board = () => {
                         let hasAnotherPiece = false;
                         tempBoard.map((row, _) => row.map((pos, _) => {
                             if (pos.slice(0, 1) === 'w' && pos.slice(1, 2) !== 'k') {
-                                console.log(pos)
                                 hasAnotherPiece = true;
                             }
                         }));
