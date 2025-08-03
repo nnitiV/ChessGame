@@ -4,33 +4,33 @@ import Message from "./message";
 import Promote from "./Promote";
 
 const Board = () => {
+    // const intialBoardState = [
+    //     ["br", "bn", "bb", "bq", "bk", "bb", "bn", "br"],
+    //     ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
+    //     ["", "", "", "", "", "", "", ""],
+    //     ["", "", "", "", "", "", "", ""],
+    //     ["", "", "", "", "", "", "", ""],
+    //     ["", "", "", "", "", "", "", ""],
+    //     ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
+    //     ["wr", "wn", "wb", "wq", "wk", "wb", "wn", "wr"]
+    // ];
+    // Board for tests
     const intialBoardState = [
         ["br", "bn", "bb", "bq", "bk", "bb", "bn", "br"],
-        ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
+        ["bp", "bp", "bp", "bp", "", "bp", "bp", "bp"],
         ["", "", "", "", "", "", "", ""],
         ["", "", "", "", "", "", "", ""],
         ["", "", "", "", "", "", "", ""],
         ["", "", "", "", "", "", "", ""],
-        ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
+        ["wp", "wp", "wp", "wp", "", "wp", "wp", "wp"],
         ["wr", "wn", "wb", "wq", "wk", "wb", "wn", "wr"]
     ];
-    // Board for tests
-    // const intialBoardState = [
-    //     ["bk", "", "wk", "", "", "", "", ""],
-    //     ["", "", "", "", "", "", "", ""],
-    //     ["", "", "", "bq", "", "", "", ""],
-    //     ["", "", "", "", "", "", "", ""],
-    //     ["", "", "", "", "", "", "", ""],
-    //     ["", "", "", "", "", "", "", ""],
-    //     ["", "", "", "", "", "", "", ""],
-    //     ["", "", "", "", "", "", "", ""]
-    // ];
     const [board, setBoard] = useState<string[][]>(intialBoardState);
     const [totalMoves, setTotalMoves] = useState<number>(0);
     const [selectedPiece, setSelectedPiece] = useState<number[] | null>(null);
     const [gameIsFinished, setGameIsFinished] = useState<boolean>(false);
     const [_, setPieceIsSelected] = useState<boolean>(false);
-    const [isWhiteTurn, setIsWhiteTurn] = useState<boolean>(false);
+    const [isWhiteTurn, setIsWhiteTurn] = useState<boolean>(true);
     const [showMessage, setShowMessage] = useState<boolean>(false);
     const [message, setMessage] = useState<string>("");
     const [openPromotionSelection, setOpenPromotionSelection] = useState<boolean>(false);
@@ -71,11 +71,11 @@ const Board = () => {
 
     const checkPlayerTurn = (piece: string) => {
         if (!selectedPiece) {
-            if (piece.slice(0, -1) === "b" && isWhiteTurn) {
+            if (piece.slice(0, 1) === "b" && isWhiteTurn) {
                 setShowMessage(true);
                 setMessage("It's white turn!");
                 return true;
-            } else if (piece.slice(0, -1) === "w" && !isWhiteTurn) {
+            } else if (piece.slice(0, 1) === "w" && !isWhiteTurn) {
                 setShowMessage(true);
                 setMessage("It's black turn!");
                 return true;
@@ -398,6 +398,7 @@ const Board = () => {
     const movePiece = (row: number, column: number) => {
         // Getting the selected piece 
         const pieceMoving = board[selectedPiece![0]][selectedPiece![1]];
+
         // Cheking for castle
         if (selectedPiece![0] === 7 && selectedPiece![1] === 4 && pieceMoving === 'wk') {
             let whiteCastleCheck = checkCastleWhite;
@@ -410,12 +411,19 @@ const Board = () => {
             setCheckCastleBlack(blackCastleCheck);
         }
 
+        // Pre-moving the piece
         const tempBoard = board;
         tempBoard[row][column] = pieceMoving.slice(0, 2);
         tempBoard[selectedPiece![0]][selectedPiece![1]] = '';
-        if ((row === 0 || row === 7) && pieceMoving.slice(1, 2) === 'p') {
+
+        // Checking if the pawn is in the promotion zone
+        if (row === 0 && pieceMoving.slice(0, 2) === 'wp') {
             setOpenPromotionSelection(true);
         }
+        if (row === 7 && pieceMoving.slice(0, 2) === 'bp') {
+            setOpenPromotionSelection(true);
+        }
+
         let hasCheck: boolean = false;
         tempBoard.map((row, rIdx) => row.map((position, cIdx) => {
             if (checkCheck(position.slice(0, 2), rIdx, cIdx)) {
@@ -428,11 +436,21 @@ const Board = () => {
             tempBoard[row][column] = '';
             return false;
         }
+        if (!hasCheck) {
+            let kingToFind = isWhiteTurn ? "wk" : "bk";
+            tempBoard.map((row, rIdx) => row.map((position, cIdx) => {
+                if (position.slice(0, 2) === kingToFind) {
+                    tempBoard[rIdx][cIdx] = position.slice(0, 2);
+                }
+            }));
+        }
+
         if (hasCheck) {
             new Audio("move-check.mp3").play();
         } else {
             new Audio('./move-self.mp3').play();
         }
+
         setBoard(tempBoard)
         setRenderScreen(prev => prev.slice(0, 1) + 'a');
         setTotalMoves(totalMove => totalMove + 1);
@@ -1284,6 +1302,7 @@ const Board = () => {
         return false;
     }
 
+    // TODO: Make this code useful for black & white
     const isThereAnyPieceProtecting = (xPos: number, yPos: number) => {
         let foundPawn = false, foundKnight = false, foundHorizontal = false, foundVertical = false, foundDiagonal = false;
         if (xPos > 0 && yPos > 0 && board[xPos - 1][yPos - 1].slice(0, 2) === 'bp') foundPawn = true;
@@ -1355,12 +1374,13 @@ const Board = () => {
                         }
                     }
                     if (selectedPiece) {
+                        console.log(enpassant);
                         if (enpassant[0] && (selectedPiece[0] === enpassant[1] && selectedPiece[1] === enpassant[2]) || (selectedPiece[0] === enpassant[3] && selectedPiece[1] === enpassant[4])) {
-                            if (board[selectedPiece[0]][selectedPiece[1] - 1].slice(0, 2) === 'bp' && !tempBoard[selectedPiece[0] + 1][selectedPiece[1] - 1]) {
+                            if (board[selectedPiece[0]][selectedPiece[1] - 1].slice(0, 2) === 'bp' && !tempBoard[selectedPiece[0] + 1][selectedPiece[1] - 1] && selectedPiece[1] - 1 === enpassant[5]) {
                                 tempBoard[selectedPiece[0] - 1][selectedPiece[1] - 1] = 'pm';
                                 setBoard(tempBoard);
                             }
-                            if (board[selectedPiece[0]][selectedPiece[1] + 1].slice(0, 2) === 'bp' && !tempBoard[selectedPiece[0] + 1][selectedPiece[1] + 1]) {
+                            if (board[selectedPiece[0]][selectedPiece[1] + 1].slice(0, 2) === 'bp' && !tempBoard[selectedPiece[0] + 1][selectedPiece[1] + 1] && selectedPiece[1] + 1 === enpassant[5]) {
                                 tempBoard[selectedPiece[0] - 1][selectedPiece[1] + 1] = 'pm';
                                 setBoard(tempBoard);
                             }
@@ -2944,24 +2964,27 @@ const Board = () => {
                     }
                     break;
                 case 'bk':
+                    let hasMove = false;
                     x = selectedPiece[0], y = selectedPiece[1];
                     // Rook checks
-                    if (checkCastleBlack[0] === false && tempBoard[x][7].slice(0, 2) === 'br' && checkCastleBlack[2] === false &&
+                    if (checkCastleWhite[0] === false && tempBoard[x][7].slice(0, 2) === 'br' && checkCastleWhite[2] === false &&
                         !tempBoard[selectedPiece![0]][selectedPiece![1] + 1] && !tempBoard[selectedPiece![0]][selectedPiece![1] + 2]) {
                         tempBoard[x][y + 2] = 'pm';
+                        hasMove = true;
                         setBoard(tempBoard);
                     }
-                    if (checkCastleBlack[0] === false && tempBoard[x][7].slice(0, 2) === 'br' && checkCastleBlack[1] === false &&
+                    if (checkCastleWhite[0] === false && tempBoard[x][7].slice(0, 2) === 'br' && checkCastleWhite[1] === false &&
                         !tempBoard[selectedPiece![0]][selectedPiece![1] - 1] && !tempBoard[selectedPiece![0]][selectedPiece![1] - 2] && !tempBoard[selectedPiece![0]][selectedPiece![1] - 3]) {
                         tempBoard[x][y - 2] = 'pm';
+                        hasMove = true;
                         setBoard(tempBoard);
                     }
 
                     // Possible move checks
                     if (x > 0) {
                         if (!board[x - 1][y]) {
-                            let hasPieceToCheckIt: boolean = false;
-                            for (let xPos = x - 1; xPos > 0; xPos--) {
+                            let hasPieceToCheckIt: boolean = checkIfKingsWillTouch(x - 1, y);
+                            for (let xPos = x - 1; xPos >= 0; xPos--) {
                                 if (board[xPos][y].slice(0, 2) === 'wq' || board[xPos][y].slice(0, 2) === 'wr') {
                                     hasPieceToCheckIt = true;
                                     break;
@@ -2969,7 +2992,7 @@ const Board = () => {
                                     break;
                                 }
                             }
-                            for (let xPos = x - 1; xPos < 7; xPos++) {
+                            for (let xPos = x - 1; xPos <= 7; xPos++) {
                                 if (board[xPos][y].slice(0, 2) === 'wq' || board[xPos][y].slice(0, 2) === 'wr') {
                                     console.log(board[xPos][y])
                                     hasPieceToCheckIt = true;
@@ -2978,7 +3001,7 @@ const Board = () => {
                                     break;
                                 }
                             }
-                            for (let yPos = y; yPos > 0; yPos--) {
+                            for (let yPos = y; yPos >= 0; yPos--) {
                                 if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
                                     hasPieceToCheckIt = true;
                                     break;
@@ -2986,7 +3009,7 @@ const Board = () => {
                                     break;
                                 }
                             }
-                            for (let yPos = y; yPos < 7; yPos++) {
+                            for (let yPos = y; yPos <= 7; yPos++) {
                                 if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x - 1][yPos].slice(0, 2) === 'wr') {
                                     hasPieceToCheckIt = true;
                                     break;
@@ -2994,7 +3017,7 @@ const Board = () => {
                                     break;
                                 }
                             }
-                            for (let xPos = x - 1, yPos = y; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                            for (let xPos = x - 1, yPos = y; xPos >= 0 && yPos <= 7; xPos--, yPos++) {
                                 if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
                                     break;
@@ -3002,7 +3025,7 @@ const Board = () => {
                                     break;
                                 }
                             }
-                            for (let xPos = x - 1, yPos = y; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                            for (let xPos = x - 1, yPos = y; xPos <= 7 && yPos >= 0; xPos++, yPos--) {
                                 if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
                                     break;
@@ -3010,7 +3033,7 @@ const Board = () => {
                                     break;
                                 }
                             }
-                            for (let xPos = x - 1, yPos = y; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                            for (let xPos = x - 1, yPos = y; xPos >= 0 && yPos >= 0; xPos--, yPos--) {
                                 if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
                                     break;
@@ -3018,7 +3041,7 @@ const Board = () => {
                                     break;
                                 }
                             }
-                            for (let xPos = x - 1, yPos = y; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                            for (let xPos = x - 1, yPos = y; xPos <= 7 && yPos <= 7; xPos++, yPos++) {
                                 if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
                                     break;
@@ -3028,17 +3051,22 @@ const Board = () => {
                             }
                             if (!hasPieceToCheckIt) {
                                 tempBoard[x - 1][y] = 'pm';
+                                hasMove = true;
                                 setBoard(tempBoard);
                             }
                         } else if (board[x - 1][y].slice(0, 1) === 'w') {
-                            tempBoard[x - 1][y] = tempBoard[x - 1][y].slice(0, 2) + 'et';
-                            setBoard(tempBoard);
+                            let xPos = x - 1, yPos = y;
+                            if (isThereAnyPieceProtecting(xPos, yPos)) {
+                                tempBoard[x - 1][y] = tempBoard[x - 1][y].slice(0, 2) + 'et';
+                                hasMove = true;
+                                setBoard(tempBoard);
+                            }
                         }
 
                         if (y < 7) {
                             if (!board[x - 1][y + 1]) {
-                                let hasPieceToCheckIt: boolean = false;
-                                for (let xPos = x - 1, yPos = y + 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                let hasPieceToCheckIt: boolean = checkIfKingsWillTouch(x - 1, y + 1);
+                                for (let xPos = x - 1, yPos = y + 1; xPos >= 0 && yPos >= 0; xPos--, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3046,7 +3074,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x - 1, yPos = y + 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                for (let xPos = x - 1, yPos = y + 1; xPos <= 7 && yPos <= 7; xPos++, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3054,7 +3082,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x - 1, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                for (let xPos = x - 1, yPos = y + 1; xPos >= 0 && yPos <= 7; xPos--, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3062,7 +3090,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x - 1, yPos = y + 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                for (let xPos = x - 1, yPos = y + 1; xPos <= 7 && yPos >= 0; xPos++, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3070,7 +3098,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let yPos = y + 1; yPos > 0; yPos--) {
+                                for (let yPos = y + 1; yPos >= 0; yPos--) {
                                     if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3078,7 +3106,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                for (let yPos = y + 1; yPos <= 7; yPos++) {
                                     if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x - 1][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3086,7 +3114,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x - 1; xPos > 0; xPos--) {
+                                for (let xPos = x - 1; xPos >= 0; xPos--) {
                                     if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3094,7 +3122,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x - 1; xPos < 7; xPos++) {
+                                for (let xPos = x - 1; xPos <= 7; xPos++) {
                                     if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3104,16 +3132,21 @@ const Board = () => {
                                 }
                                 if (!hasPieceToCheckIt) {
                                     tempBoard[x - 1][y + 1] = 'pm';
+                                    hasMove = true;
                                     setBoard(tempBoard);
                                 }
                             } else if (board[x - 1][y + 1].slice(0, 1) === 'w') {
-                                tempBoard[x - 1][y + 1] = tempBoard[x - 1][y + 1].slice(0, 2) + 'et';
-                                setBoard(tempBoard);
+                                let xPos = x - 1, yPos = y + 1;
+                                if (isThereAnyPieceProtecting(xPos, yPos)) {
+                                    tempBoard[x - 1][y + 1] = tempBoard[x - 1][y + 1].slice(0, 2) + 'et';
+                                    hasMove = true;
+                                    setBoard(tempBoard);
+                                }
                             }
 
                             if (!board[x][y + 1]) {
-                                let hasPieceToCheckIt: boolean = false;
-                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                let hasPieceToCheckIt: boolean = checkIfKingsWillTouch(x, y + 1);
+                                for (let yPos = y + 1; yPos <= 7; yPos++) {
                                     if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3121,7 +3154,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let yPos = y - 1; yPos > 0; yPos--) {
+                                for (let yPos = y + 1; yPos >= 0; yPos--) {
                                     if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3129,7 +3162,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x; xPos > 0; xPos--) {
+                                for (let xPos = x; xPos >= 0; xPos--) {
                                     if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3137,7 +3170,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x; xPos < 7; xPos++) {
+                                for (let xPos = x; xPos <= 7; xPos++) {
                                     if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3145,8 +3178,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-
-                                for (let xPos = x, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                for (let xPos = x, yPos = y + 1; xPos >= 0 && yPos <= 7; xPos--, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3154,7 +3186,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x - 1, yPos = y; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                for (let xPos = x, yPos = y + 1; xPos >= 0 && yPos >= 0; xPos--, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3162,7 +3194,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x - 1, yPos = y; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                for (let xPos = x, yPos = y + 1; xPos <= 7 && yPos <= 7; xPos++, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3170,15 +3202,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
-                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
-                                        hasPieceToCheckIt = true;
-                                        break;
-                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
-                                        break;
-                                    }
-                                }
-                                for (let xPos = x, yPos = y + 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                for (let xPos = x, yPos = y + 1; xPos <= 7 && yPos >= 0; xPos++, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3188,18 +3212,23 @@ const Board = () => {
                                 }
                                 if (!hasPieceToCheckIt) {
                                     tempBoard[x][y + 1] = 'pm';
+                                    hasMove = true;
                                     setBoard(tempBoard);
                                 }
                             } else if (board[x][y + 1].slice(0, 1) === 'w') {
-                                tempBoard[x][y + 1] = tempBoard[x][y + 1].slice(0, 2) + 'et';
-                                setBoard(tempBoard);
+                                let xPos: number = x, yPos: number = y + 1;
+                                if (isThereAnyPieceProtecting(xPos, yPos)) {
+                                    hasMove = true;
+                                    tempBoard[x][y + 1] = tempBoard[x][y + 1].slice(0, 2) + 'et';
+                                    setBoard(tempBoard);
+                                }
                             }
                         }
 
                         if (y > 0) {
                             if (!board[x - 1][y - 1]) {
-                                let hasPieceToCheckIt: boolean = false;
-                                for (let xPos = x - 1, yPos = y - 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                let hasPieceToCheckIt: boolean = checkIfKingsWillTouch(x - 1, y - 1);
+                                for (let xPos = x - 1, yPos = y - 1; xPos >= 0 && yPos <= 7; xPos--, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3208,7 +3237,7 @@ const Board = () => {
                                     }
 
                                 }
-                                for (let xPos = x - 1, yPos = y - 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                for (let xPos = x - 1, yPos = y - 1; xPos <= 7 && yPos >= 0; xPos++, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3216,7 +3245,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x - 1, yPos = y - 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                for (let xPos = x - 1, yPos = y - 1; xPos <= 7 && yPos <= 7; xPos++, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3224,7 +3253,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x - 1, yPos = y - 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                for (let xPos = x - 1, yPos = y - 1; xPos >= 0 && yPos >= 0; xPos--, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3232,15 +3261,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let yPos = y + 1; yPos > 0; yPos--) {
-                                    if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
-                                        hasPieceToCheckIt = true;
-                                        break;
-                                    } else if ((board[x - 1][yPos].slice(0, 2) !== 'wq' || board[x - 1][yPos].slice(0, 2) !== 'wr') && board[x - 1][yPos].slice(0, 2) !== '') {
-                                        break;
-                                    }
-                                }
-                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                for (let yPos = y - 1; yPos >= 0; yPos--) {
                                     if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x - 1][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3248,7 +3269,15 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x; xPos > 0; xPos--) {
+                                for (let yPos = y - 1; yPos <= 7; yPos++) {
+                                    if (board[x - 1][yPos].slice(0, 2) === 'wq' || board[x - 1][yPos].slice(0, 2) === 'wr') {
+                                        hasPieceToCheckIt = true;
+                                        break;
+                                    } else if ((board[x - 1][yPos].slice(0, 2) !== 'wq' || board[x - 1][yPos].slice(0, 2) !== 'wr') && board[x - 1][yPos].slice(0, 2) !== '') {
+                                        break;
+                                    }
+                                }
+                                for (let xPos = x - 1; xPos >= 0; xPos--) {
                                     if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3256,7 +3285,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x; xPos < 7; xPos++) {
+                                for (let xPos = x - 1; xPos <= 7; xPos++) {
                                     if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3266,16 +3295,21 @@ const Board = () => {
                                 }
                                 if (!hasPieceToCheckIt) {
                                     tempBoard[x - 1][y - 1] = 'pm';
+                                    hasMove = true;
                                     setBoard(tempBoard);
                                 }
                             } else if (board[x - 1][y - 1].slice(0, 1) === 'w') {
-                                tempBoard[x - 1][y - 1] = tempBoard[x - 1][y - 1].slice(0, 2) + 'et';
-                                setBoard(tempBoard);
+                                let xPos = x - 1, yPos = y - 1;
+                                if (isThereAnyPieceProtecting(xPos, yPos)) {
+                                    tempBoard[x - 1][y - 1] = tempBoard[x - 1][y - 1].slice(0, 2) + 'et';
+                                    hasMove = true;
+                                    setBoard(tempBoard);
+                                }
                             }
 
                             if (!board[x][y - 1]) {
-                                let hasPieceToCheckIt: boolean = false;
-                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                let hasPieceToCheckIt: boolean = checkIfKingsWillTouch(x, y - 1);
+                                if (!hasPieceToCheckIt) for (let yPos = y - 1; yPos <= 7; yPos++) {
                                     if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3283,7 +3317,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let yPos = y - 1; yPos > 0; yPos--) {
+                                if (!hasPieceToCheckIt) for (let yPos = y - 1; yPos >= 0; yPos--) {
                                     if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3291,7 +3325,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x, yPos = y - 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                if (!hasPieceToCheckIt) for (let xPos = x, yPos = y - 1; xPos >= 0 && yPos <= 7; xPos--, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3299,7 +3333,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x, yPos = y - 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                if (!hasPieceToCheckIt) for (let xPos = x, yPos = y - 1; xPos <= 7 && yPos >= 0; xPos++, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3307,7 +3341,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x; xPos > 0; xPos--) {
+                                if (!hasPieceToCheckIt) for (let xPos = x; xPos >= 0; xPos--) {
                                     if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3315,7 +3349,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x; xPos < 7; xPos++) {
+                                if (!hasPieceToCheckIt) for (let xPos = x; xPos <= 7; xPos++) {
                                     if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3323,7 +3357,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x, yPos = y - 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                if (!hasPieceToCheckIt) for (let xPos = x, yPos = y - 1; xPos >= 0 && yPos >= 0; xPos--, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3331,7 +3365,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x, yPos = y - 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                if (!hasPieceToCheckIt) for (let xPos = x, yPos = y - 1; xPos <= 7 && yPos <= 7; xPos++, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3341,18 +3375,23 @@ const Board = () => {
                                 }
                                 if (!hasPieceToCheckIt) {
                                     tempBoard[x][y - 1] = 'pm';
+                                    hasMove = true;
                                     setBoard(tempBoard);
                                 }
                             } else if (board[x][y - 1].slice(0, 1) === 'w') {
-                                tempBoard[x][y - 1] = tempBoard[x][y - 1].slice(0, 2) + 'et';
-                                setBoard(tempBoard);
+                                let xPos = x, yPos = y - 1;
+                                if (isThereAnyPieceProtecting(xPos, yPos)) {
+                                    tempBoard[x][y - 1] = tempBoard[x][y - 1].slice(0, 2) + 'et';
+                                    hasMove = true;
+                                    setBoard(tempBoard);
+                                }
                             }
                         }
                     }
                     if (x < 7) {
                         if (!board[x + 1][y]) {
-                            let hasPieceToCheckIt: boolean = false;
-                            for (let xPos = x + 1; xPos < 7; xPos++) {
+                            let hasPieceToCheckIt: boolean = checkIfKingsWillTouch(x + 1, y);
+                            for (let xPos = x + 1; xPos <= 7; xPos++) {
                                 if (board[xPos][y].slice(0, 2) === 'wq' || board[xPos][y].slice(0, 2) === 'wr') {
                                     hasPieceToCheckIt = true;
                                     break;
@@ -3360,7 +3399,7 @@ const Board = () => {
                                     break;
                                 }
                             }
-                            for (let xPos = x + 1; xPos > 0; xPos--) {
+                            for (let xPos = x + 1; xPos >= 0; xPos--) {
                                 if (board[xPos][y].slice(0, 2) === 'wq' || board[xPos][y].slice(0, 2) === 'wr') {
                                     hasPieceToCheckIt = true;
                                     break;
@@ -3368,7 +3407,7 @@ const Board = () => {
                                     break;
                                 }
                             }
-                            for (let yPos = y; yPos > 0; yPos--) {
+                            for (let yPos = y; yPos >= 0; yPos--) {
                                 if (board[x + 1][yPos].slice(0, 2) === 'wq' || board[x + 1][yPos].slice(0, 2) === 'wr') {
                                     hasPieceToCheckIt = true;
                                     break;
@@ -3376,7 +3415,7 @@ const Board = () => {
                                     break;
                                 }
                             }
-                            for (let yPos = y; yPos < 7; yPos++) {
+                            for (let yPos = y; yPos <= 7; yPos++) {
                                 if (board[x + 1][yPos].slice(0, 2) === 'wq' || board[x + 1][yPos].slice(0, 2) === 'wr') {
                                     hasPieceToCheckIt = true;
                                     break;
@@ -3384,7 +3423,7 @@ const Board = () => {
                                     break;
                                 }
                             }
-                            for (let xPos = x + 1, yPos = y; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                            for (let xPos = x + 1, yPos = y; xPos >= 0 && yPos <= 7; xPos--, yPos++) {
                                 if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
                                     break;
@@ -3392,7 +3431,7 @@ const Board = () => {
                                     break;
                                 }
                             }
-                            for (let xPos = x + 1, yPos = y; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                            for (let xPos = x + 1, yPos = y; xPos >= 0 && yPos >= 0; xPos--, yPos--) {
                                 if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
                                     break;
@@ -3400,7 +3439,7 @@ const Board = () => {
                                     break;
                                 }
                             }
-                            for (let xPos = x + 1, yPos = y; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                            for (let xPos = x + 1, yPos = y; xPos <= 7 && yPos <= 7; xPos++, yPos++) {
                                 if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
                                     break;
@@ -3408,15 +3447,7 @@ const Board = () => {
                                     break;
                                 }
                             }
-                            for (let xPos = x + 1, yPos = y; xPos > 0 && yPos < 7; xPos--, yPos++) {
-                                if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
-                                    hasPieceToCheckIt = true;
-                                    break;
-                                } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
-                                    break;
-                                }
-                            }
-                            for (let xPos = x + 1, yPos = y; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                            for (let xPos = x + 1, yPos = y; xPos <= 7 && yPos >= 0; xPos++, yPos--) {
                                 if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                     hasPieceToCheckIt = true;
                                     break;
@@ -3426,16 +3457,22 @@ const Board = () => {
                             }
                             if (!hasPieceToCheckIt) {
                                 tempBoard[x + 1][y] = 'pm';
+                                hasMove = true;
                                 setBoard(tempBoard);
                             }
                         } else if (board[x + 1][y].slice(0, 1) === 'w') {
-                            tempBoard[x + 1][y] = tempBoard[x + 1][y].slice(0, 2) + 'et';
-                            setBoard(tempBoard);
+                            let xPos = x + 1, yPos = y;
+                            console.log("X: " + x, "Y: " + y, "xPos: " + xPos, "yPos: " + yPos);
+                            if (isThereAnyPieceProtecting(xPos, yPos)) {
+                                tempBoard[x + 1][y] = tempBoard[x + 1][y].slice(0, 2) + 'et';
+                                hasMove = true;
+                                setBoard(tempBoard);
+                            }
                         }
                         if (y > 0) {
                             if (!board[x + 1][y - 1]) {
-                                let hasPieceToCheckIt: boolean = false;
-                                for (let xPos = x + 1, yPos = y - 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                let hasPieceToCheckIt: boolean = checkIfKingsWillTouch(x + 1, y - 1);
+                                for (let xPos = x + 1, yPos = y - 1; xPos >= 0 && yPos <= 7; xPos--, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3443,7 +3480,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x + 1, yPos = y - 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                for (let xPos = x + 1, yPos = y - 1; xPos <= 7 && yPos >= 0; xPos++, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3451,7 +3488,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x + 1, yPos = y - 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                for (let xPos = x + 1, yPos = y - 1; xPos >= 0 && yPos >= 0; xPos--, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3459,7 +3496,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x + 1, yPos = y - 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                for (let xPos = x + 1, yPos = y - 1; xPos <= 7 && yPos <= 7; xPos++, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3467,7 +3504,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x + 1; xPos > 0; xPos--) {
+                                for (let xPos = x + 1; xPos >= 0; xPos--) {
                                     if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3475,7 +3512,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x + 1; xPos < 7; xPos++) {
+                                for (let xPos = x + 1; xPos <= 7; xPos++) {
                                     if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3483,7 +3520,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let yPos = y - 1; yPos > 0; yPos--) {
+                                for (let yPos = y - 1; yPos >= 0; yPos--) {
                                     if (board[x + 1][yPos].slice(0, 2) === 'wq' || board[x + 1][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3491,7 +3528,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let yPos = y - 1; yPos < 7; yPos++) {
+                                for (let yPos = y - 1; yPos <= 7; yPos++) {
                                     if (board[x + 1][yPos].slice(0, 2) === 'wq' || board[x + 1][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3501,15 +3538,20 @@ const Board = () => {
                                 }
                                 if (!hasPieceToCheckIt) {
                                     tempBoard[x + 1][y - 1] = 'pm';
+                                    hasMove = true;
                                     setBoard(tempBoard);
                                 }
                             } else if (board[x + 1][y - 1].slice(0, 1) === 'w') {
-                                tempBoard[x + 1][y - 1] = tempBoard[x + 1][y - 1].slice(0, 2) + 'et';
-                                setBoard(tempBoard);
+                                let xPos = x + 1, yPos = y - 1;
+                                if (isThereAnyPieceProtecting(xPos, yPos)) {
+                                    tempBoard[x - 1][y - 1] = tempBoard[x - 1][y - 1].slice(0, 2) + 'et';
+                                    hasMove = true;
+                                    setBoard(tempBoard);
+                                }
                             }
                             if (!board[x][y - 1]) {
-                                let hasPieceToCheckIt: boolean = false;
-                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                let hasPieceToCheckIt: boolean = checkIfKingsWillTouch(x, y - 1);
+                                if (!hasPieceToCheckIt) for (let yPos = y - 1; yPos <= 7; yPos++) {
                                     if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3517,7 +3559,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let yPos = y - 1; yPos > 0; yPos--) {
+                                if (!hasPieceToCheckIt) for (let yPos = y - 1; yPos >= 0; yPos--) {
                                     if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3525,7 +3567,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x, yPos = y - 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                if (!hasPieceToCheckIt) for (let xPos = x, yPos = y - 1; xPos >= 0 && yPos <= 7; xPos--, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3533,7 +3575,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x, yPos = y - 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                if (!hasPieceToCheckIt) for (let xPos = x, yPos = y - 1; xPos <= 7 && yPos >= 0; xPos++, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3541,7 +3583,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x; xPos > 0; xPos--) {
+                                if (!hasPieceToCheckIt) for (let xPos = x; xPos >= 0; xPos--) {
                                     if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3549,7 +3591,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x; xPos < 7; xPos++) {
+                                if (!hasPieceToCheckIt) for (let xPos = x; xPos <= 7; xPos++) {
                                     if (board[xPos][y - 1].slice(0, 2) === 'wq' || board[xPos][y - 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3557,7 +3599,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x, yPos = y - 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                if (!hasPieceToCheckIt) for (let xPos = x, yPos = y - 1; xPos >= 0 && yPos >= 0; xPos--, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3565,7 +3607,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x, yPos = y - 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                if (!hasPieceToCheckIt) for (let xPos = x, yPos = y - 1; xPos <= 7 && yPos <= 7; xPos++, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3575,17 +3617,22 @@ const Board = () => {
                                 }
                                 if (!hasPieceToCheckIt) {
                                     tempBoard[x][y - 1] = 'pm';
+                                    hasMove = true;
                                     setBoard(tempBoard);
                                 }
                             } else if (board[x][y - 1].slice(0, 1) === 'w') {
-                                tempBoard[x][y - 1] = tempBoard[x][y - 1].slice(0, 2) + 'et';
-                                setBoard(tempBoard);
+                                let xPos = x, yPos = y - 1;
+                                if (isThereAnyPieceProtecting(xPos, yPos)) {
+                                    tempBoard[x][y - 1] = tempBoard[x][y - 1].slice(0, 2) + 'et';
+                                    hasMove = true;
+                                    setBoard(tempBoard);
+                                }
                             }
                         }
                         if (y < 7) {
                             if (!board[x + 1][y + 1]) {
-                                let hasPieceToCheckIt: boolean = false;
-                                for (let xPos = x + 1, yPos = y + 1; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                let hasPieceToCheckIt: boolean = checkIfKingsWillTouch(x + 1, y + 1);
+                                for (let xPos = x + 1, yPos = y + 1; xPos <= 7 && yPos <= 7; xPos++, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3593,7 +3640,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x + 1, yPos = y + 1; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                for (let xPos = x + 1, yPos = y + 1; xPos >= 0 && yPos >= 0; xPos--, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3601,7 +3648,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x + 1, yPos = y + 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                for (let xPos = x + 1, yPos = y + 1; xPos <= 7 && yPos >= 0; xPos++, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3609,7 +3656,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x + 1, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                for (let xPos = x + 1, yPos = y + 1; xPos >= 0 && yPos <= 7; xPos--, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3617,7 +3664,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x + 1; xPos > 0; xPos--) {
+                                for (let xPos = x + 1; xPos >= 0; xPos--) {
                                     if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3625,7 +3672,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x + 1; xPos < 7; xPos++) {
+                                for (let xPos = x + 1; xPos <= 7; xPos++) {
                                     if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3633,7 +3680,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let yPos = y + 1; yPos > 0; yPos--) {
+                                for (let yPos = y + 1; yPos >= 0; yPos--) {
                                     if (board[x + 1][yPos].slice(0, 2) === 'wq' || board[x + 1][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3641,7 +3688,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                for (let yPos = y + 1; yPos <= 7; yPos++) {
                                     if (board[x + 1][yPos].slice(0, 2) === 'wq' || board[x + 1][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3651,16 +3698,20 @@ const Board = () => {
                                 }
                                 if (!hasPieceToCheckIt) {
                                     tempBoard[x + 1][y + 1] = 'pm';
+                                    hasMove = true;
                                     setBoard(tempBoard);
                                 }
                             } else if (board[x + 1][y + 1].slice(0, 1) === 'w') {
-                                tempBoard[x + 1][y + 1] = tempBoard[x + 1][y + 1].slice(0, 2) + 'et';
-                                setBoard(tempBoard);
+                                let xPos = x + 1, yPos = y + 1;
+                                if (isThereAnyPieceProtecting(xPos, yPos)) {
+                                    tempBoard[x + 1][y + 1] = tempBoard[x + 1][y + 1].slice(0, 2) + 'et';
+                                    hasMove = true;
+                                    setBoard(tempBoard);
+                                }
                             }
-
                             if (!board[x][y + 1]) {
-                                let hasPieceToCheckIt: boolean = false;
-                                for (let yPos = y + 1; yPos < 7; yPos++) {
+                                let hasPieceToCheckIt: boolean = checkIfKingsWillTouch(x, y + 1);
+                                for (let yPos = y + 1; yPos <= 7; yPos++) {
                                     if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3668,7 +3719,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let yPos = y - 1; yPos > 0; yPos--) {
+                                for (let yPos = y + 1; yPos >= 0; yPos--) {
                                     if (board[x][yPos].slice(0, 2) === 'wq' || board[x][yPos].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3676,7 +3727,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x; xPos > 0; xPos--) {
+                                for (let xPos = x; xPos >= 0; xPos--) {
                                     if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3684,7 +3735,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x; xPos < 7; xPos++) {
+                                for (let xPos = x; xPos <= 7; xPos++) {
                                     if (board[xPos][y + 1].slice(0, 2) === 'wq' || board[xPos][y + 1].slice(0, 2) === 'wr') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3692,7 +3743,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
+                                for (let xPos = x, yPos = y + 1; xPos >= 0 && yPos <= 7; xPos--, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3700,7 +3751,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x - 1, yPos = y; xPos > 0 && yPos > 0; xPos--, yPos--) {
+                                for (let xPos = x, yPos = y + 1; xPos >= 0 && yPos >= 0; xPos--, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3708,7 +3759,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x - 1, yPos = y; xPos < 7 && yPos < 7; xPos++, yPos++) {
+                                for (let xPos = x, yPos = y + 1; xPos <= 7 && yPos <= 7; xPos++, yPos++) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3716,15 +3767,7 @@ const Board = () => {
                                         break;
                                     }
                                 }
-                                for (let xPos = x, yPos = y + 1; xPos > 0 && yPos < 7; xPos--, yPos++) {
-                                    if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
-                                        hasPieceToCheckIt = true;
-                                        break;
-                                    } else if ((board[xPos][yPos].slice(0, 2) !== 'wq' || board[xPos][yPos].slice(0, 2) !== 'wb') && board[xPos][yPos].slice(0, 2) !== '') {
-                                        break;
-                                    }
-                                }
-                                for (let xPos = x, yPos = y + 1; xPos < 7 && yPos > 0; xPos++, yPos--) {
+                                for (let xPos = x, yPos = y + 1; xPos <= 7 && yPos >= 0; xPos++, yPos--) {
                                     if (tempBoard[xPos][yPos].slice(0, 2) === 'wq' || tempBoard[xPos][yPos].slice(0, 2) === 'wb') {
                                         hasPieceToCheckIt = true;
                                         break;
@@ -3734,12 +3777,38 @@ const Board = () => {
                                 }
                                 if (!hasPieceToCheckIt) {
                                     tempBoard[x][y + 1] = 'pm';
+                                    hasMove = true;
                                     setBoard(tempBoard);
                                 }
                             } else if (board[x][y + 1].slice(0, 1) === 'w') {
-                                tempBoard[x][y + 1] = tempBoard[x][y + 1].slice(0, 2) + 'et';
-                                setBoard(tempBoard);
+                                let xPos: number = x, yPos: number = y + 1;
+                                if (isThereAnyPieceProtecting(xPos, yPos)) {
+                                    hasMove = true;
+                                    tempBoard[x][y + 1] = tempBoard[x][y + 1].slice(0, 2) + 'et';
+                                    setBoard(tempBoard);
+                                }
                             }
+                        }
+                    }
+                    if (!hasMove) {
+                        let hasAnotherPiece = false;
+                        tempBoard.map((row, _) => row.map((pos, _) => {
+                            if (pos.slice(0, 1) === 'b' && pos.slice(1, 2) !== 'k') {
+                                hasAnotherPiece = true;
+                            }
+                        }));
+                        if (board[selectedPiece![0]][selectedPiece![1]].includes("dg") && !hasAnotherPiece) {
+                            console.log("Check mate!")
+                            setTimeout(() => {
+                                setBoard(intialBoardState);
+                                unselectPiece();
+                            }, 1000)
+                        } else if (!hasAnotherPiece) {
+                            console.log("Stale mate!")
+                            setTimeout(() => {
+                                setBoard(intialBoardState);
+                                unselectPiece();
+                            }, 1000)
                         }
                     }
                     break;
@@ -3759,7 +3828,6 @@ const Board = () => {
             })
         })
     }
-
     // Update and remove any move marks after each move
     useEffect(() => {
         const tempBoard = board;
@@ -3767,7 +3835,6 @@ const Board = () => {
         setBoard(tempBoard);
 
     }, [board]);
-
     // Reset game after 50 moves.
     useEffect(() => {
         if (totalMoves == 50) {
@@ -3784,7 +3851,6 @@ const Board = () => {
             }, 3000)
         }
     }, [totalMoves])
-
     // Updates the board when you choose a piece to promote
     const updateBoard = () => {
         const tempBoard = board;

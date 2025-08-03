@@ -1,10 +1,10 @@
 .game {
-    width: calc(20vw + 15rem);
+    width: calc(20vw + 15vw);
     /* width: fit-content; */
     background-color: var(--white-1);
-    border: .5rem solid var(--brown-3);
-    border-radius: .5rem;
-    margin: 2rem auto;
+    border: .5vw solid var(--brown-3);
+    border-radius: .5vw;
+    margin: 2vw auto;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -24,7 +24,7 @@
 
 .game .board div {
     width: auto;
-    height: 4.5rem;
+    height: 4.5vw;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -32,7 +32,7 @@
 }
 
 .game .board div.active {
-    box-shadow: inset 0 0 1rem var(--black-3);
+    box-shadow: inset 0 0 1vw var(--black-3);
     border-width: 2px;
     border-color: var(--beige-1);
 }
@@ -64,9 +64,9 @@
 .game .board div.green.possibleMoviment::after,
 .game .board div.yellow.possibleMoviment::after {
     content: "";
-    width: 1rem;
-    height: 1rem;
-    border-radius: 16rem;
+    width: 1vw;
+    height: 1vw;
+    border-radius: 16vw;
     background-color: var(--black-50-3);
 }
 
@@ -75,8 +75,8 @@
 }
 
 .game .board div img {
-    width: 3rem;
-    height: 3rem;
+    width: 3vw;
+    height: 3vw;
     transition: .125s all;
     user-select: none;
 }
@@ -84,15 +84,15 @@
 .game .board div.yellow img.eatable,
 .game .board div.green img.eatable {
     border: 4px solid var(--black-50-3);
-    border-radius: 16rem;
-    width: 3.5rem;
-    height: 3.5rem;
+    border-radius: 16vw;
+    width: 3.5vw;
+    height: 3.5vw;
 }
 
 .game .board div.yellow.active img,
 .game .board div.green.active img {
-    width: 4rem;
-    height: 4rem;
+    width: 4vw;
+    height: 4vw;
     animation: initAnim .45s forwards 0s, tiltPiece 1.25s infinite .45s;
 }
 

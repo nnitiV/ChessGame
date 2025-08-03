@@ -23,14 +23,14 @@
     justify-content: space-around;
     align-items: center;
     background-color: var(--white-2);
-    border-radius: 1rem;
+    border-radius: 1vw;
     border: 4px solid var(--black-2);
     width: 50vw;
     height: 25dvh;
     color: var(--black-2);
     font-weight: bold;
     transition: .3s ease-in-out all;
-    font-size: 2rem;
+    font-size: 2vw;
 }
 
 .wrapper .promote p {

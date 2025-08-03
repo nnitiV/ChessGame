@@ -1,3 +1,4 @@
+import { memo } from "react";
 import styles from "./index.module.css"
 
 interface Arguments {
@@ -16,4 +17,4 @@ const Message = ({ message, showMessage, setShowMessage }: Arguments) => {
     )
 };
 
-export default Message;
+export default memo(Message);
