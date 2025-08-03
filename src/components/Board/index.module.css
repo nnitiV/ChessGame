@@ -17,6 +17,7 @@
 
 .game .board {
     width: 100%;
+    height: 100%;
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     overflow: hidden;
@@ -24,8 +25,8 @@
 
 .game .board div {
     width: auto;
-    height: 4.5vw;
     display: flex;
+    height: 4.5vw;
     align-items: center;
     justify-content: center;
     border: 4px solid transparent;
@@ -119,4 +120,47 @@
     50% {
         transform: rotateZ(-25deg);
     }
+}
+
+@media (max-width: 928px) {
+    .game {
+        width: 100vw;
+        margin-top: 0;
+    }
+
+    .game .board div {
+        height: 5.25rem;
+    }
+
+    .game .board div.yellow img,
+    .game .board div.green img {
+        height: 8.5vw !important;
+        width: 8.5vw;
+    }
+
+    .game .board div.yellow img.eatable,
+    .game .board div.green img.eatable,
+    .game .board div.yellow.active img,
+    .game .board div.green.active img {
+        width: 8.5vw;
+        height: 8.5vw;
+    }
+
+    .game .board div.danger img {
+        width: 8.5vw;
+        height: 8.5vw;
+    }
+
+    .game .board div.green.possibleMoviment::after,
+    .game .board div.yellow.possibleMoviment::after {
+        width: 3vw;
+        height: 3vw;
+    }
+}
+
+@media (max-width: 508px) {
+    .game .board div {
+        height: 5.2rem;
+    }
+
 }

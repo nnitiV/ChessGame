@@ -1,10 +1,10 @@
 .messageDiv {
     position: absolute;
     right: 5%;
-    opacity: 0;
     top: 23vw;
     border-radius: 1vw;
     width: 25vw;
+    opacity: 0;
     padding: 2vw;
     display: flex;
     align-items: center;
@@ -17,4 +17,17 @@
 
 .messageDiv.active {
     opacity: 1;
+}
+
+@media (max-width: 928px) {
+    .messageDiv {
+        width: fit-content;
+        height: fit-content;
+        top: initial;
+        bottom: 1.5%;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 3vw;
+        text-align: center;
+    }
 }

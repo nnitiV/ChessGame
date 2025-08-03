@@ -9,3 +9,9 @@
     padding: calc(.25vw + .5vw) 0;
     text-transform: uppercase;
 }
+
+@media (max-width: 928px) {
+    .header {
+        font-size: 3vw;
+    }
+}
