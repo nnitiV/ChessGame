@@ -5,7 +5,8 @@ const initialState: User = {
     id: -1,
     name: "",
     email: "",
-    age: -1
+    age: -1,
+    gamesWon: -1
 };
 
 export const userSlice = createSlice({

@@ -1,6 +1,6 @@
 import { type JSX } from "react"
 import { useAppSelector } from "../../redux/hooks";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 
 type PrivateRouteProps = {
     children: JSX.Element

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import styles from "./index.module.css"
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import type { RootState } from "../../redux/store";
 import { setLoggedUser } from "../../redux/userSlice";
 import { useAppDispatch } from "../../redux/hooks";

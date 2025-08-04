@@ -17,7 +17,7 @@ const Signup = () => {
     const signup = async () => {
         if (user?.password != confirmPassword) return setError("Passwords doesn't match.");
         try {
-            const result = await axios.post("http://localhost:8080/api/users", user);
+            await axios.post("http://localhost:8080/api/users", user);
             setError("");
             navigate("/login");
         } catch (error) {
