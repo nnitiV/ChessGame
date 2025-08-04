@@ -7,7 +7,6 @@
     justify-content: space-around;
     font-size: calc(.5vw + .75vw);
     padding: calc(.25vw + .5vw) 10vw;
-    text-transform: uppercase;
 
 }
 
@@ -17,7 +16,7 @@
 }
 
 .header nav {
-    width: 12vw;
+    width: 20vw;
     display: flex;
     justify-content: space-between;
 }
