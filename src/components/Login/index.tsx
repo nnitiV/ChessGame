@@ -25,11 +25,11 @@ const Login = () => {
         try {
             let result = await axios.post("http://localhost:8080/api/users/login", {
                 email: user.email,
-                password: user.password
-            });
+                password: user.password,
+            }, { withCredentials: true });
             setError("");
             const loggedUser: User = result.data;
-            document.cookie = "user=" + loggedUser;
+            console.log(result.headers);
             dispatch(setLoggedUser(loggedUser));
             navigate("/");
         } catch (ex) {
