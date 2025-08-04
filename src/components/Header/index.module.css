@@ -4,10 +4,22 @@
     color: var(--white-3);
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-around;
     font-size: calc(.5vw + .75vw);
-    padding: calc(.25vw + .5vw) 0;
+    padding: calc(.25vw + .5vw) 10vw;
     text-transform: uppercase;
+
+}
+
+.header a {
+    text-decoration: none;
+    color: var(--white-3);
+}
+
+.header nav {
+    width: 12vw;
+    display: flex;
+    justify-content: space-between;
 }
 
 @media (max-width: 928px) {
